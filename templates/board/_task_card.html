@@ -1,0 +1,27 @@
+<div class="task-card task-card--{{ task.priority }}"
+     draggable="true"
+     data-task-id="{{ task.id }}">
+
+  <div class="task-card-body">
+    <h3 class="task-title">{{ task.title }}</h3>
+    {% if task.description %}
+    <p class="task-description">{{ task.description|truncatechars:90 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="task-card-footer">
+    <div class="task-meta">
+      <span class="priority-badge">{{ task.get_priority_display }}</span>
+      {% if task.due_date %}
+      <span class="due-date{% if task.is_overdue %} due-date--overdue{% endif %}">
+        {{ task.due_date|date:"M j" }}{% if task.is_overdue %} overdue{% endif %}
+      </span>
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'mark_done' task.id %}" class="done-form">
+      {% csrf_token %}
+      <button type="submit" class="btn-done">Done</button>
+    </form>
+  </div>
+
+</div>
