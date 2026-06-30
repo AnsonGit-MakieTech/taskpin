@@ -1,11 +1,11 @@
 <div class="task-card task-card--{{ task.priority }}"
-     draggable="true"
+     {% if can_move_tasks %}draggable="true"{% endif %}
      data-task-id="{{ task.id }}">
 
   {# ── Card header: actions menu ── #}
   <div class="task-card-actions">
     <div class="card-menu" data-menu="{{ task.id }}">
-      <button class="card-menu-trigger" onclick="toggleMenu({{ task.id }}, this)" title="Options">
+      <button type="button" class="card-menu-trigger" onclick="toggleMenu({{ task.id }}, this)" title="Options">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
         </svg>
@@ -19,6 +19,7 @@
           </svg>
           Edit
         </a>
+        {% if can_move_tasks %}
         <form method="post" action="{% url 'task_reassign' task.id %}" class="reassign-form" id="reassign-{{ task.id }}">
           {% csrf_token %}
           <div class="card-menu-item card-menu-item--reassign">
@@ -40,10 +41,11 @@
             {% endfor %}
           </select>
         </form>
-        <form method="post" action="{% url 'task_delete' task.id %}"
-              onsubmit="return confirm('Delete this task?')">
+        {% endif %}
+        <form method="post" action="{% url 'task_delete' task.id %}" class="delete-form">
           {% csrf_token %}
-          <button type="submit" class="card-menu-item card-menu-item--delete">
+          <button type="button" class="card-menu-item card-menu-item--delete btn-delete-task"
+                  data-task-title="{{ task.title }}">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -77,7 +79,7 @@
     </div>
     <form method="post" action="{% url 'mark_done' task.id %}" class="done-form">
       {% csrf_token %}
-      <button type="submit" class="btn-done">Done</button>
+      <button type="button" class="btn-done btn-done-confirm" data-task-title="{{ task.title }}">Done</button>
     </form>
   </div>
 

@@ -343,10 +343,97 @@
     .reassign-select:focus { border-color: var(--orange); }
 
     .reassign-form { padding: 0 6px 4px; }
+
+    /* ── Confirm modal ── */
+    .confirm-modal[hidden] { display: none; }
+
+    .confirm-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .confirm-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(46, 46, 46, .35);
+    }
+
+    .confirm-dialog {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      background: var(--white);
+      border-radius: 14px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.18);
+      border: 1px solid var(--border);
+    }
+
+    .confirm-dialog h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .confirm-dialog p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn-confirm-cancel,
+    .btn-confirm-ok {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-confirm-cancel {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-confirm-cancel:hover {
+      border-color: #bbb;
+      color: var(--text-dark);
+    }
+
+    .btn-confirm-ok {
+      background: var(--orange);
+      color: #fff;
+    }
+
+    .btn-confirm-ok:hover { background: #F4A020; }
+
+    .btn-confirm-ok--success { background: var(--green); }
+    .btn-confirm-ok--success:hover { background: #66BB6A; }
+
+    .btn-confirm-ok--danger { background: var(--red); }
+    .btn-confirm-ok--danger:hover { background: #E53935; }
+
+    body.modal-open { overflow: hidden; }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}">
 <div class="layout">
 
   <aside class="sidebar">
@@ -443,10 +530,92 @@
   </main>
 
 </div>
+
+<div id="confirm-modal" class="confirm-modal" hidden>
+  <div class="confirm-backdrop"></div>
+  <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <h3 id="confirm-title">Confirm</h3>
+    <p id="confirm-message"></p>
+    <div class="confirm-actions">
+      <button type="button" class="btn-confirm-cancel" id="confirm-cancel">Cancel</button>
+      <button type="button" class="btn-confirm-ok" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
 {% block extra_js %}{% endblock %}
 <script>
 (function () {
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const canMove = document.body.dataset.canMove === 'true';
+
+  /* ─────────────────────────────────────────────
+     0. CONFIRM MODAL
+  ───────────────────────────────────────────── */
+  const modal = document.getElementById('confirm-modal');
+  const modalTitle = document.getElementById('confirm-title');
+  const modalMessage = document.getElementById('confirm-message');
+  const modalOk = document.getElementById('confirm-ok');
+  const modalCancel = document.getElementById('confirm-cancel');
+  let pendingForm = null;
+
+  function openConfirm(opts) {
+    modalTitle.textContent = opts.title;
+    modalMessage.textContent = opts.message;
+    modalOk.textContent = opts.okLabel;
+    modalOk.className = 'btn-confirm-ok' + (opts.okClass ? ' ' + opts.okClass : '');
+    pendingForm = opts.form;
+    modal.hidden = false;
+    document.body.classList.add('modal-open');
+  }
+
+  function closeConfirm() {
+    modal.hidden = true;
+    document.body.classList.remove('modal-open');
+    pendingForm = null;
+    modalOk.className = 'btn-confirm-ok';
+  }
+
+  modalCancel.addEventListener('click', closeConfirm);
+  modal.querySelector('.confirm-backdrop').addEventListener('click', closeConfirm);
+
+  modalOk.addEventListener('click', function () {
+    if (pendingForm) pendingForm.submit();
+    closeConfirm();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.hidden) closeConfirm();
+  });
+
+  document.addEventListener('click', function (e) {
+    const doneBtn = e.target.closest('.btn-done-confirm');
+    if (doneBtn) {
+      e.preventDefault();
+      closeAllMenus();
+      openConfirm({
+        title: 'Mark as done?',
+        message: 'Mark "' + doneBtn.dataset.taskTitle + '" as completed? You can still find it on the Done page.',
+        okLabel: 'Yes, mark done',
+        okClass: 'btn-confirm-ok--success',
+        form: doneBtn.closest('form'),
+      });
+      return;
+    }
+
+    const deleteBtn = e.target.closest('.btn-delete-task');
+    if (deleteBtn) {
+      e.preventDefault();
+      closeAllMenus();
+      openConfirm({
+        title: 'Delete this note?',
+        message: 'Delete "' + deleteBtn.dataset.taskTitle + '"? This action cannot be undone.',
+        okLabel: 'Delete note',
+        okClass: 'btn-confirm-ok--danger',
+        form: deleteBtn.closest('form'),
+      });
+    }
+  });
 
   /* ─────────────────────────────────────────────
      1. DROPDOWN FIX
@@ -504,6 +673,14 @@
   let draggedTaskId = null;
 
   document.addEventListener('dragstart', function (e) {
+    if (!canMove) {
+      e.preventDefault();
+      return;
+    }
+    if (e.target.closest('.card-menu, .done-form, button, select, a, input')) {
+      e.preventDefault();
+      return;
+    }
     const card = e.target.closest('.task-card[data-task-id]');
     if (!card) return;
     draggedTaskId = card.dataset.taskId;
@@ -523,6 +700,7 @@
   });
 
   document.addEventListener('dragover', function (e) {
+    if (!canMove) return;
     const col = e.target.closest('.drop-column');
     if (col && draggedTaskId) {
       e.preventDefault();
@@ -542,6 +720,7 @@
   });
 
   document.addEventListener('drop', function (e) {
+    if (!canMove) return;
     const col = e.target.closest('.drop-column');
     if (!col || !draggedTaskId) return;
     e.preventDefault();

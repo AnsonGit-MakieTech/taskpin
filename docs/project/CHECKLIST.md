@@ -110,3 +110,12 @@
 - [x] Create `templates/team/invite_form.html` — simple form: username, first name, last name, role, password
 - [x] Restrict `invite_member` to admin-role users only
 - [x] Add active state highlight to the "Team" sidebar link
+
+---
+
+## Task 11 — Bug Fixes & Revisions
+
+- [x] Replace browser `confirm()` on Delete with a friendly in-app confirmation modal
+- [x] Restrict task move/reassign (menu + drag-and-drop) to admin-role users only
+- [x] Add a friendly confirmation modal before marking a task as Done
+- [x] Add a registration page at `/accounts/register/` with themed UI and login link

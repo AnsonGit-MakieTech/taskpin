@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -7,7 +8,7 @@ from django.http import HttpResponseForbidden
 from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
-from .forms import TaskCreateForm, InviteMemberForm
+from .forms import TaskCreateForm, InviteMemberForm, RegisterForm
 
 
 def is_admin(user):
@@ -153,6 +154,8 @@ def mark_done(request, task_id):
 
 @login_required
 def task_reassign(request, task_id):
+    if not is_admin(request.user):
+        return HttpResponseForbidden('Only admins can move tasks.')
     task = get_object_or_404(Task, pk=task_id)
     if request.method == 'POST':
         new_user_id = request.POST.get('assigned_to')
@@ -271,3 +274,24 @@ def invite_member(request):
         return redirect('team_list')
 
     return render(request, 'team/invite_form.html', {'form': form})
+
+
+def register(request):
+    if request.user.is_authenticated:
+        return redirect('team_board')
+
+    form = RegisterForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = User.objects.create_user(
+            username=form.cleaned_data['username'],
+            password=form.cleaned_data['password1'],
+            first_name=form.cleaned_data['first_name'],
+            last_name=form.cleaned_data['last_name'],
+        )
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.role = 'admin'
+        profile.save()
+        login(request, user)
+        return redirect('team_board')
+
+    return render(request, 'registration/register.html', {'form': form})
