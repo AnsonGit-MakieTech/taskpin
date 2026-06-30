@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Note — TaskPin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-page {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px;
+    min-height: 100vh;
+  }
+
+  .form-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.1), 0 0 0 1px rgba(0,0,0,.05);
+    overflow: hidden;
+  }
+
+  /* Sticky-note style top stripe by priority (JS-driven) */
+  .form-card-top {
+    height: 6px;
+    background: var(--yellow);
+    transition: background .2s;
+  }
+  .form-card-top.priority-important { background: var(--orange); }
+  .form-card-top.priority-urgent    { background: var(--red); }
+
+  .form-card-body { padding: 28px 28px 24px; }
+
+  .form-heading {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .form-heading svg { color: var(--orange); }
+
+  .form-group { margin-bottom: 18px; }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: #FAFAF8;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .form-group input[type="text"]:focus,
+  .form-group input[type="date"]:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255,183,77,.18);
+    background: var(--white);
+  }
+
+  .form-group textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* Priority radio pills */
+  .priority-pills {
+    display: flex;
+    gap: 8px;
+  }
+
+  .priority-pill {
+    flex: 1;
+    position: relative;
+  }
+
+  .priority-pill input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0; height: 0;
+  }
+
+  .priority-pill label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    color: var(--text-muted);
+    background: #FAFAF8;
+  }
+
+  .priority-pill input[type="radio"]:checked + label {
+    color: var(--text-dark);
+    border-color: transparent;
+  }
+
+  .priority-pill--normal input:checked + label   { background: var(--yellow); border-color: #F5CC50; }
+  .priority-pill--important input:checked + label { background: var(--orange); color: #fff; border-color: #E49A30; }
+  .priority-pill--urgent input:checked + label    { background: var(--red);    color: #fff; border-color: #C62828; }
+
+  .form-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0 20px;
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    padding: 9px 18px;
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-cancel:hover { border-color: #bbb; color: var(--text-dark); }
+
+  .btn-submit {
+    padding: 9px 22px;
+    background: var(--orange);
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-submit:hover { background: #F4A020; }
+
+  .field-error {
+    font-size: 12px;
+    color: #C62828;
+    margin-top: 5px;
+    font-weight: 500;
+  }
+
+  /* Select arrow */
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-muted);
+    border-bottom: none;
+  }
+  .select-wrap select { padding-right: 34px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-page">
+  <div class="form-card">
+    <div class="form-card-top" id="priority-stripe"></div>
+    <div class="form-card-body">
+
+      <h2 class="form-heading">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+        </svg>
+        Create a Note
+      </h2>
+
+      <form method="post" id="task-form">
+        {% csrf_token %}
+
+        {# Title #}
+        <div class="form-group">
+          <label for="id_title">Task title <span style="color:var(--red)">*</span></label>
+          <input type="text" name="title" id="id_title"
+                 value="{{ form.title.value|default:'' }}"
+                 placeholder="What needs to be done?"
+                 autofocus required>
+          {% if form.title.errors %}
+            <p class="field-error">{{ form.title.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        {# Description #}
+        <div class="form-group">
+          <label for="id_description">Description</label>
+          <textarea name="description" id="id_description"
+                    placeholder="Optional details…" rows="3">{{ form.description.value|default:'' }}</textarea>
+        </div>
+
+        {# Priority — custom radio pills #}
+        <div class="form-group">
+          <label>Priority</label>
+          <div class="priority-pills">
+            <div class="priority-pill priority-pill--normal">
+              <input type="radio" name="priority" id="p_normal" value="normal"
+                     {% if form.priority.value != 'important' and form.priority.value != 'urgent' %}checked{% endif %}>
+              <label for="p_normal">Normal</label>
+            </div>
+            <div class="priority-pill priority-pill--important">
+              <input type="radio" name="priority" id="p_important" value="important"
+                     {% if form.priority.value == 'important' %}checked{% endif %}>
+              <label for="p_important">Important</label>
+            </div>
+            <div class="priority-pill priority-pill--urgent">
+              <input type="radio" name="priority" id="p_urgent" value="urgent"
+                     {% if form.priority.value == 'urgent' %}checked{% endif %}>
+              <label for="p_urgent">Urgent</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          {# Assign to #}
+          <div class="form-group">
+            <label for="id_assign_to">Assign to</label>
+            <div class="select-wrap">
+              <select name="assign_to" id="id_assign_to">
+                <option value="">— Unassigned —</option>
+                {% for user in users %}
+                <option value="{{ user.pk }}"
+                  {% if form.assign_to.value == user.pk|stringformat:"s" %}selected{% endif %}>
+                  {% if user.profile %}{{ user.profile.display_name }}{% else %}{{ user.get_full_name|default:user.username }}{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          {# Due date #}
+          <div class="form-group">
+            <label for="id_due_date">Due date</label>
+            <input type="date" name="due_date" id="id_due_date"
+                   value="{{ form.due_date.value|default:'' }}">
+          </div>
+        </div>
+
+        <hr class="form-divider">
+
+        <div class="form-actions">
+          <a href="{% url 'team_board' %}" class="btn-cancel">Cancel</a>
+          <button type="submit" class="btn-submit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Pin Note
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Update top stripe color to match selected priority
+  const stripe = document.getElementById('priority-stripe');
+  const radios = document.querySelectorAll('input[name="priority"]');
+
+  function updateStripe() {
+    stripe.className = 'form-card-top';
+    radios.forEach(r => {
+      if (r.checked) stripe.classList.add('priority-' + r.value);
+    });
+  }
+
+  radios.forEach(r => r.addEventListener('change', updateStripe));
+  updateStripe();
+</script>
+{% endblock %}

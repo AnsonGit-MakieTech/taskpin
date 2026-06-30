@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.db.models import Case, When, IntegerField
 
 from .models import Task, ActivityLog
+from .forms import TaskCreateForm
 
 
 PRIORITY_ORDER = Case(
@@ -45,6 +46,36 @@ def team_board(request):
         'board': board,
         'unassigned_tasks': unassigned_tasks,
     })
+
+
+@login_required
+def task_create(request):
+    form = TaskCreateForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        task = form.save(commit=False)
+        task.created_by = request.user
+        assigned_to = form.cleaned_data.get('assign_to')
+        if assigned_to:
+            task.assigned_to = assigned_to
+            task.status = Task.STATUS_ASSIGNED
+        else:
+            task.status = Task.STATUS_UNASSIGNED
+        task.save()
+        ActivityLog.objects.create(
+            actor=request.user,
+            action=f'Created task "{task.title}"'
+            + (f' and assigned to {assigned_to.get_full_name() or assigned_to.username}' if assigned_to else ''),
+            task=task,
+        )
+        return redirect('team_board')
+
+    users = (
+        User.objects
+        .filter(is_active=True)
+        .select_related('profile')
+        .order_by('first_name', 'username')
+    )
+    return render(request, 'board/task_form.html', {'form': form, 'users': users})
 
 
 @login_required

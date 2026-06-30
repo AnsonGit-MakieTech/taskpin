@@ -23,12 +23,12 @@
 
 ## Task 3 — Authentication (Login / Logout)
 
-- [ ] Wire Django's built-in `auth` login and logout views in `taskpin/urls.py`
-- [ ] Create top-level `templates/` folder and a `templates/base.html` layout template
-- [ ] Add sidebar navigation in `base.html` with links: Team Board, My Board, Done, Team, Settings
-- [ ] Apply theme styles in `base.html`: Inter font, `#F8F6F0` background, `#2E2E2E` text, warm accent colors
-- [ ] Create `templates/registration/login.html` styled to match the theme
-- [ ] Add `@login_required` decorator to all app views
+- [x] Wire Django's built-in `auth` login and logout views in `taskpin/urls.py`
+- [x] Create top-level `templates/` folder and a `templates/base.html` layout template
+- [x] Add sidebar navigation in `base.html` with links: Team Board, My Board, Done, Team, Settings
+- [x] Apply theme styles in `base.html`: Inter font, `#F8F6F0` background, `#2E2E2E` text, warm accent colors
+- [x] Create `templates/registration/login.html` styled to match the theme
+- [x] Add `@login_required` decorator to all app views
 
 ---
 
@@ -47,9 +47,66 @@
 
 ## Task 5 — Create Task & Quick Assignment
 
-- [ ] Create `TaskCreateView` in `base/views.py` with a minimal form: title, priority, due date, assign_to
-- [ ] Create `templates/board/task_form.html` for the create form, styled as a simple modal or page
-- [ ] Add a "Create Note" button to the Team Board page that opens the create form
-- [ ] On form save: set `status = assigned` if `assigned_to` is filled, otherwise `status = unassigned`
-- [ ] Write an entry to `ActivityLog` on every task creation
-- [ ] Redirect back to the Team Board after successful task creation
+- [x] Create `TaskCreateView` in `base/views.py` with a minimal form: title, priority, due date, assign_to
+- [x] Create `templates/board/task_form.html` for the create form, styled as a simple modal or page
+- [x] Add a "Create Note" button to the Team Board page that opens the create form
+- [x] On form save: set `status = assigned` if `assigned_to` is filled, otherwise `status = unassigned`
+- [x] Write an entry to `ActivityLog` on every task creation
+- [x] Redirect back to the Team Board after successful task creation
+
+---
+
+## Task 6 — My Board (Personal Task View)
+
+- [ ] Create a `my_board` view in `base/views.py` — shows only tasks assigned to the logged-in user with `status = assigned`
+- [ ] Register URL `my/` → `my_board` in `base/urls.py`
+- [ ] Create `templates/board/my_board.html` — clean single-column layout with the same sticky note cards
+- [ ] Add active state highlight to the "My Board" sidebar link
+- [ ] Show task count in the page header
+- [ ] Show a friendly empty state when the user has no active tasks
+
+---
+
+## Task 7 — Done / Completed Tasks Page
+
+- [ ] Create a `done_tasks` view in `base/views.py` — fetches all tasks with `status = done`, ordered by `completed_at` descending
+- [ ] Register URL `done/` → `done_tasks` in `base/urls.py`
+- [ ] Create `templates/board/done_tasks.html` — list view with task title, who created it, who completed it, and the completion date
+- [ ] Style completed task rows with the `--green` color (`#81C784`) and a strikethrough on the title
+- [ ] Add active state highlight to the "Done" sidebar link
+- [ ] Show a friendly empty state when no tasks have been completed yet
+
+---
+
+## Task 8 — Reassign / Move Task
+
+- [ ] Create a `task_reassign` view in `base/views.py` — accepts POST with a new `assigned_to` user ID
+- [ ] Register URL `task/<int:task_id>/reassign/` in `base/urls.py`
+- [ ] Add a small "Move" dropdown or button to each task card in `_task_card.html`
+- [ ] On save: update `assigned_to` and `status`, write to `ActivityLog`
+- [ ] Redirect back to Team Board after reassignment
+- [ ] Show an inline reassign form only to the task creator or admin role
+
+---
+
+## Task 9 — Edit & Delete Task
+
+- [ ] Create a `task_edit` view in `base/views.py` — pre-fills `TaskCreateForm` with existing task data
+- [ ] Create a `task_delete` view — POST-only, soft-deletes or hard-deletes the task
+- [ ] Register URLs: `task/<int:task_id>/edit/` and `task/<int:task_id>/delete/`
+- [ ] Add Edit and Delete options to the small menu on each task card in `_task_card.html`
+- [ ] Reuse `templates/board/task_form.html` for the edit page (pass `task` to context for the heading)
+- [ ] Write an entry to `ActivityLog` on edit and delete
+- [ ] Redirect back to Team Board after edit or delete
+
+---
+
+## Task 10 — Team Management (Admin)
+
+- [ ] Create a `team_list` view in `base/views.py` — lists all active users with their role and task count
+- [ ] Create an `invite_member` view — creates a new Django `User` and their `UserProfile`
+- [ ] Register URLs: `team/` → `team_list`, `team/invite/` → `invite_member`
+- [ ] Create `templates/team/team_list.html` — card grid of team members with avatar, name, role, and active task count
+- [ ] Create `templates/team/invite_form.html` — simple form: username, first name, last name, role, password
+- [ ] Restrict `invite_member` to admin-role users only
+- [ ] Add active state highlight to the "Team" sidebar link
