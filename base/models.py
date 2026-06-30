@@ -97,7 +97,7 @@ class ActivityLog(models.Model):
     )
     action = models.CharField(max_length=300)
     task = models.ForeignKey(
-        Task, on_delete=models.CASCADE, related_name='logs'
+        Task, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs'
     )
     timestamp = models.DateTimeField(auto_now_add=True)
 

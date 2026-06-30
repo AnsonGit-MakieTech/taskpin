@@ -42,9 +42,11 @@ def team_board(request):
         )
         board.append({'user': user, 'tasks': tasks})
 
+    all_users = list(users)
     return render(request, 'board/team_board.html', {
         'board': board,
         'unassigned_tasks': unassigned_tasks,
+        'all_users': all_users,
     })
 
 
@@ -94,10 +96,25 @@ def my_board(request):
         {'label': 'Important', 'key': 'important', 'tasks': important},
         {'label': 'Normal',    'key': 'normal',    'tasks': normal},
     ]
+    all_users = list(
+        User.objects.filter(is_active=True).select_related('profile').order_by('first_name', 'username')
+    )
     return render(request, 'board/my_board.html', {
         'groups': groups,
         'task_count': len(all_tasks),
+        'all_users': all_users,
     })
+
+
+@login_required
+def done_tasks(request):
+    tasks = list(
+        Task.objects
+        .filter(status=Task.STATUS_DONE)
+        .select_related('created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile')
+        .order_by('-completed_at')
+    )
+    return render(request, 'board/done_tasks.html', {'tasks': tasks})
 
 
 @login_required
@@ -112,4 +129,88 @@ def mark_done(request, task_id):
             action=f'Marked "{task.title}" as done',
             task=task,
         )
+    return redirect('team_board')
+
+
+@login_required
+def task_reassign(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    if request.method == 'POST':
+        new_user_id = request.POST.get('assigned_to')
+        if new_user_id:
+            new_user = get_object_or_404(User, pk=new_user_id)
+            old_assignee = task.assigned_to
+            task.assigned_to = new_user
+            task.status = Task.STATUS_ASSIGNED
+            task.save()
+            old_name = old_assignee.get_full_name() or old_assignee.username if old_assignee else 'Unassigned'
+            new_name = new_user.get_full_name() or new_user.username
+            ActivityLog.objects.create(
+                actor=request.user,
+                action=f'Moved "{task.title}" from {old_name} to {new_name}',
+                task=task,
+            )
+        else:
+            task.assigned_to = None
+            task.status = Task.STATUS_UNASSIGNED
+            task.save()
+            ActivityLog.objects.create(
+                actor=request.user,
+                action=f'Unassigned "{task.title}"',
+                task=task,
+            )
+    return redirect('team_board')
+
+
+@login_required
+def task_edit(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    form = TaskCreateForm(request.POST or None, instance=task)
+
+    if request.method == 'POST' and form.is_valid():
+        task = form.save(commit=False)
+        assigned_to = form.cleaned_data.get('assign_to')
+        if assigned_to:
+            task.assigned_to = assigned_to
+            task.status = Task.STATUS_ASSIGNED
+        else:
+            task.assigned_to = None
+            task.status = Task.STATUS_UNASSIGNED
+        task.save()
+        ActivityLog.objects.create(
+            actor=request.user,
+            action=f'Edited task "{task.title}"',
+            task=task,
+        )
+        return redirect('team_board')
+
+    users = (
+        User.objects
+        .filter(is_active=True)
+        .select_related('profile')
+        .order_by('first_name', 'username')
+    )
+    # Pre-select the current assignee in the form
+    if task.assigned_to and not form.is_bound:
+        form.initial['assign_to'] = task.assigned_to.pk
+
+    return render(request, 'board/task_form.html', {
+        'form': form,
+        'users': users,
+        'task': task,
+    })
+
+
+@login_required
+def task_delete(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    if request.method == 'POST':
+        title = task.title
+        # Log before deleting so the FK reference remains valid during log creation
+        ActivityLog.objects.create(
+            actor=request.user,
+            action=f'Deleted task "{title}"',
+            task=task,
+        )
+        task.delete()
     return redirect('team_board')

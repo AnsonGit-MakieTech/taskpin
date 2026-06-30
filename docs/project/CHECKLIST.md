@@ -69,35 +69,35 @@
 
 ## Task 7 — Done / Completed Tasks Page
 
-- [ ] Create a `done_tasks` view in `base/views.py` — fetches all tasks with `status = done`, ordered by `completed_at` descending
-- [ ] Register URL `done/` → `done_tasks` in `base/urls.py`
-- [ ] Create `templates/board/done_tasks.html` — list view with task title, who created it, who completed it, and the completion date
-- [ ] Style completed task rows with the `--green` color (`#81C784`) and a strikethrough on the title
-- [ ] Add active state highlight to the "Done" sidebar link
-- [ ] Show a friendly empty state when no tasks have been completed yet
+- [x] Create a `done_tasks` view in `base/views.py` — fetches all tasks with `status = done`, ordered by `completed_at` descending
+- [x] Register URL `done/` → `done_tasks` in `base/urls.py`
+- [x] Create `templates/board/done_tasks.html` — list view with task title, who created it, who completed it, and the completion date
+- [x] Style completed task rows with the `--green` color (`#81C784`) and a strikethrough on the title
+- [x] Add active state highlight to the "Done" sidebar link
+- [x] Show a friendly empty state when no tasks have been completed yet
 
 ---
 
 ## Task 8 — Reassign / Move Task
 
-- [ ] Create a `task_reassign` view in `base/views.py` — accepts POST with a new `assigned_to` user ID
-- [ ] Register URL `task/<int:task_id>/reassign/` in `base/urls.py`
-- [ ] Add a small "Move" dropdown or button to each task card in `_task_card.html`
-- [ ] On save: update `assigned_to` and `status`, write to `ActivityLog`
-- [ ] Redirect back to Team Board after reassignment
-- [ ] Show an inline reassign form only to the task creator or admin role
+- [x] Create a `task_reassign` view in `base/views.py` — accepts POST with a new `assigned_to` user ID
+- [x] Register URL `task/<int:task_id>/reassign/` in `base/urls.py`
+- [x] Add a small "Move" dropdown or button to each task card in `_task_card.html`
+- [x] On save: update `assigned_to` and `status`, write to `ActivityLog`
+- [x] Redirect back to Team Board after reassignment
+- [x] Show an inline reassign form only to the task creator or admin role
 
 ---
 
 ## Task 9 — Edit & Delete Task
 
-- [ ] Create a `task_edit` view in `base/views.py` — pre-fills `TaskCreateForm` with existing task data
-- [ ] Create a `task_delete` view — POST-only, soft-deletes or hard-deletes the task
-- [ ] Register URLs: `task/<int:task_id>/edit/` and `task/<int:task_id>/delete/`
-- [ ] Add Edit and Delete options to the small menu on each task card in `_task_card.html`
-- [ ] Reuse `templates/board/task_form.html` for the edit page (pass `task` to context for the heading)
-- [ ] Write an entry to `ActivityLog` on edit and delete
-- [ ] Redirect back to Team Board after edit or delete
+- [x] Create a `task_edit` view in `base/views.py` — pre-fills `TaskCreateForm` with existing task data
+- [x] Create a `task_delete` view — POST-only, soft-deletes or hard-deletes the task
+- [x] Register URLs: `task/<int:task_id>/edit/` and `task/<int:task_id>/delete/`
+- [x] Add Edit and Delete options to the small menu on each task card in `_task_card.html`
+- [x] Reuse `templates/board/task_form.html` for the edit page (pass `task` to context for the heading)
+- [x] Write an entry to `ActivityLog` on edit and delete
+- [x] Redirect back to Team Board after edit or delete
 
 ---
 

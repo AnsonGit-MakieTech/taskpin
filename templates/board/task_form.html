@@ -213,10 +213,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
         </svg>
-        Create a Note
+        {% if task %}Edit Note{% else %}Create a Note{% endif %}
       </h2>
 
-      <form method="post" id="task-form">
+      <form method="post" action="{% if task %}{% url 'task_edit' task.id %}{% else %}{% url 'task_create' %}{% endif %}" id="task-form">
         {% csrf_token %}
 
         {# Title #}
@@ -289,6 +289,15 @@
 
         <div class="form-actions">
           <a href="{% url 'team_board' %}" class="btn-cancel">Cancel</a>
+          {% if task %}
+          <button type="submit" class="btn-submit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Save Changes
+          </button>
+          {% else %}
           <button type="submit" class="btn-submit">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -296,6 +305,7 @@
             </svg>
             Pin Note
           </button>
+          {% endif %}
         </div>
       </form>
 

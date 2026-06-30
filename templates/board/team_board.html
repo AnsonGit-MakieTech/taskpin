@@ -170,6 +170,19 @@
     color: #bbb;
     line-height: 1.5;
   }
+
+  /* ── Drag and drop ── */
+  .task-card.dragging {
+    opacity: .4;
+    cursor: grabbing;
+  }
+
+  .drop-column.drag-over {
+    outline: 2px dashed var(--orange);
+    outline-offset: 4px;
+    border-radius: var(--radius);
+    background: #FFF8E8;
+  }
 </style>
 {% endblock %}
 
@@ -194,7 +207,7 @@
     <div class="board-columns">
 
       {# ── Unassigned column ── #}
-      <div class="board-column">
+      <div class="board-column drop-column" data-user-id="">
         <div class="column-header">
           <div class="user-avatar user-avatar--unassigned" aria-hidden="true">&#8203;</div>
           <div class="column-meta">
@@ -229,7 +242,7 @@
 
       {# ── Per-user columns ── #}
       {% for entry in board %}
-      <div class="board-column">
+      <div class="board-column drop-column" data-user-id="{{ entry.user.pk }}">
         <div class="column-header">
           <div class="user-avatar"
                style="background: {% if entry.user.profile %}{{ entry.user.profile.avatar_color }}{% else %}#FFB74D{% endif %};">

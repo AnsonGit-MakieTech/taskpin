@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}TaskPin{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet">
@@ -262,6 +263,86 @@
       transition: background .12s;
     }
     .btn-done:hover { background: rgba(0,0,0,.2); }
+
+    /* ── Card actions menu ── */
+    .task-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 4px;
+    }
+
+    .card-menu { position: relative; }
+
+    .card-menu-trigger {
+      background: rgba(0,0,0,.08);
+      border: none;
+      border-radius: 5px;
+      width: 26px; height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: inherit;
+      opacity: .6;
+      transition: opacity .12s, background .12s;
+      padding: 0;
+    }
+    .card-menu-trigger:hover { opacity: 1; background: rgba(0,0,0,.15); }
+
+    .card-menu-dropdown {
+      display: none;
+      position: fixed;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15);
+      min-width: 175px;
+      z-index: 9999;
+      padding: 4px;
+    }
+
+    .card-menu-dropdown.open { display: block; }
+
+    .card-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dark);
+      text-decoration: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .1s;
+      width: 100%;
+      background: none;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+    }
+    .card-menu-item:hover { background: var(--bg); }
+    .card-menu-item--delete { color: var(--red); }
+    .card-menu-item--delete:hover { background: #FFEBEE; }
+
+    .card-menu-item--reassign { color: var(--text-muted); font-size: 12px; padding-bottom: 2px; }
+
+    .reassign-select {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text-dark);
+      background: #FAFAF8;
+      outline: none;
+      margin: 0 0 4px;
+      cursor: pointer;
+    }
+    .reassign-select:focus { border-color: var(--orange); }
+
+    .reassign-form { padding: 0 6px 4px; }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -297,7 +378,8 @@
         </svg>
         My Board
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'done_tasks' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'done_tasks' %}active{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
@@ -361,5 +443,133 @@
 
 </div>
 {% block extra_js %}{% endblock %}
+<script>
+(function () {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+  /* ─────────────────────────────────────────────
+     1. DROPDOWN FIX
+     Move every .card-menu-dropdown to <body> so
+     it is never trapped inside a transformed parent.
+  ───────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.card-menu-dropdown').forEach(function (el) {
+      document.body.appendChild(el);
+    });
+  });
+
+  window.toggleMenu = function (id, trigger) {
+    const dropdown = document.getElementById('menu-' + id);
+    const isOpen = dropdown.classList.contains('open');
+
+    closeAllMenus();
+
+    if (!isOpen) {
+      const rect = trigger.getBoundingClientRect();
+      dropdown.style.top    = (rect.bottom + 6) + 'px';
+      dropdown.style.left   = 'auto';
+      dropdown.style.right  = (window.innerWidth - rect.right) + 'px';
+      dropdown.style.transform = '';
+
+      // Flip upward if not enough space below
+      if (window.innerHeight - rect.bottom < 230) {
+        dropdown.style.top       = (rect.top - 6) + 'px';
+        dropdown.style.transform = 'translateY(-100%)';
+      }
+
+      dropdown.classList.add('open');
+    }
+  };
+
+  function closeAllMenus() {
+    document.querySelectorAll('.card-menu-dropdown.open').forEach(function (el) {
+      el.classList.remove('open');
+    });
+  }
+
+  // Close on outside click
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.card-menu') && !e.target.closest('.card-menu-dropdown')) {
+      closeAllMenus();
+    }
+  });
+
+  // Close on scroll
+  document.addEventListener('scroll', closeAllMenus, true);
+
+  /* ─────────────────────────────────────────────
+     2. DRAG AND DROP (Team Board only)
+  ───────────────────────────────────────────── */
+  let draggedTaskId = null;
+
+  document.addEventListener('dragstart', function (e) {
+    const card = e.target.closest('.task-card[data-task-id]');
+    if (!card) return;
+    draggedTaskId = card.dataset.taskId;
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedTaskId);
+  });
+
+  document.addEventListener('dragend', function (e) {
+    document.querySelectorAll('.task-card.dragging').forEach(function (el) {
+      el.classList.remove('dragging');
+    });
+    document.querySelectorAll('.drop-column.drag-over').forEach(function (el) {
+      el.classList.remove('drag-over');
+    });
+    draggedTaskId = null;
+  });
+
+  document.addEventListener('dragover', function (e) {
+    const col = e.target.closest('.drop-column');
+    if (col && draggedTaskId) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.drop-column.drag-over').forEach(function (el) {
+        if (el !== col) el.classList.remove('drag-over');
+      });
+      col.classList.add('drag-over');
+    }
+  });
+
+  document.addEventListener('dragleave', function (e) {
+    const col = e.target.closest('.drop-column');
+    if (col && !col.contains(e.relatedTarget)) {
+      col.classList.remove('drag-over');
+    }
+  });
+
+  document.addEventListener('drop', function (e) {
+    const col = e.target.closest('.drop-column');
+    if (!col || !draggedTaskId) return;
+    e.preventDefault();
+    col.classList.remove('drag-over');
+
+    const userId = col.dataset.userId;   // empty string = unassigned
+    const taskId = draggedTaskId;
+
+    // POST to the reassign endpoint
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/task/' + taskId + '/reassign/';
+
+    const csrf = document.createElement('input');
+    csrf.type  = 'hidden';
+    csrf.name  = 'csrfmiddlewaretoken';
+    csrf.value = csrfToken;
+    form.appendChild(csrf);
+
+    const field = document.createElement('input');
+    field.type  = 'hidden';
+    field.name  = 'assigned_to';
+    field.value = userId;
+    form.appendChild(field);
+
+    document.body.appendChild(form);
+    form.submit();
+  });
+})();
+</script>
 </body>
 </html>
