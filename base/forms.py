@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import Task
+from .models import Task, UserProfile
 
 
 class TaskCreateForm(forms.ModelForm):
@@ -41,3 +41,23 @@ class TaskCreateForm(forms.ModelForm):
         self.fields['assign_to'].label_from_instance = lambda u: (
             u.get_full_name() or u.username
         )
+
+
+class InviteMemberForm(forms.Form):
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={'placeholder': 'e.g. juan', 'autofocus': True}),
+    )
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
+    role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES, initial='member')
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'placeholder': 'Temporary password'}),
+        min_length=6,
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError('This username is already taken.')
+        return username

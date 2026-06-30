@@ -103,10 +103,10 @@
 
 ## Task 10 — Team Management (Admin)
 
-- [ ] Create a `team_list` view in `base/views.py` — lists all active users with their role and task count
-- [ ] Create an `invite_member` view — creates a new Django `User` and their `UserProfile`
-- [ ] Register URLs: `team/` → `team_list`, `team/invite/` → `invite_member`
-- [ ] Create `templates/team/team_list.html` — card grid of team members with avatar, name, role, and active task count
-- [ ] Create `templates/team/invite_form.html` — simple form: username, first name, last name, role, password
-- [ ] Restrict `invite_member` to admin-role users only
-- [ ] Add active state highlight to the "Team" sidebar link
+- [x] Create a `team_list` view in `base/views.py` — lists all active users with their role and task count
+- [x] Create an `invite_member` view — creates a new Django `User` and their `UserProfile`
+- [x] Register URLs: `team/` → `team_list`, `team/invite/` → `invite_member`
+- [x] Create `templates/team/team_list.html` — card grid of team members with avatar, name, role, and active task count
+- [x] Create `templates/team/invite_form.html` — simple form: username, first name, last name, role, password
+- [x] Restrict `invite_member` to admin-role users only
+- [x] Add active state highlight to the "Team" sidebar link

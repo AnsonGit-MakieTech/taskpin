@@ -2,10 +2,29 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.db.models import Case, When, IntegerField
+from django.db.models import Case, When, IntegerField, Count, Q
+from django.http import HttpResponseForbidden
+from functools import wraps
 
-from .models import Task, ActivityLog
-from .forms import TaskCreateForm
+from .models import Task, ActivityLog, UserProfile
+from .forms import TaskCreateForm, InviteMemberForm
+
+
+def is_admin(user):
+    if user.is_superuser:
+        return True
+    profile = getattr(user, 'profile', None)
+    return profile is not None and profile.role == 'admin'
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not is_admin(request.user):
+            return HttpResponseForbidden('Admin access required.')
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 
 PRIORITY_ORDER = Case(
@@ -214,3 +233,41 @@ def task_delete(request, task_id):
         )
         task.delete()
     return redirect('team_board')
+
+
+@login_required
+def team_list(request):
+    members = (
+        User.objects
+        .filter(is_active=True)
+        .select_related('profile')
+        .annotate(
+            active_task_count=Count(
+                'assigned_tasks',
+                filter=Q(assigned_tasks__status=Task.STATUS_ASSIGNED),
+            )
+        )
+        .order_by('first_name', 'username')
+    )
+    return render(request, 'team/team_list.html', {
+        'members': members,
+        'is_admin': is_admin(request.user),
+    })
+
+
+@admin_required
+def invite_member(request):
+    form = InviteMemberForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = User.objects.create_user(
+            username=form.cleaned_data['username'],
+            password=form.cleaned_data['password'],
+            first_name=form.cleaned_data['first_name'],
+            last_name=form.cleaned_data['last_name'],
+        )
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.role = form.cleaned_data['role']
+        profile.save()
+        return redirect('team_list')
+
+    return render(request, 'team/invite_form.html', {'form': form})
