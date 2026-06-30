@@ -58,12 +58,12 @@
 
 ## Task 6 — My Board (Personal Task View)
 
-- [ ] Create a `my_board` view in `base/views.py` — shows only tasks assigned to the logged-in user with `status = assigned`
-- [ ] Register URL `my/` → `my_board` in `base/urls.py`
-- [ ] Create `templates/board/my_board.html` — clean single-column layout with the same sticky note cards
-- [ ] Add active state highlight to the "My Board" sidebar link
-- [ ] Show task count in the page header
-- [ ] Show a friendly empty state when the user has no active tasks
+- [x] Create a `my_board` view in `base/views.py` — shows only tasks assigned to the logged-in user with `status = assigned`
+- [x] Register URL `my/` → `my_board` in `base/urls.py`
+- [x] Create `templates/board/my_board.html` — clean single-column layout with the same sticky note cards
+- [x] Add active state highlight to the "My Board" sidebar link
+- [x] Show task count in the page header
+- [x] Show a friendly empty state when the user has no active tasks
 
 ---
 

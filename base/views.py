@@ -79,6 +79,28 @@ def task_create(request):
 
 
 @login_required
+def my_board(request):
+    base_qs = (
+        Task.objects
+        .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED)
+        .order_by('due_date', 'created_at')
+    )
+    urgent    = list(base_qs.filter(priority=Task.PRIORITY_URGENT))
+    important = list(base_qs.filter(priority=Task.PRIORITY_IMPORTANT))
+    normal    = list(base_qs.filter(priority=Task.PRIORITY_NORMAL))
+    all_tasks = urgent + important + normal
+    groups = [
+        {'label': 'Urgent',    'key': 'urgent',    'tasks': urgent},
+        {'label': 'Important', 'key': 'important', 'tasks': important},
+        {'label': 'Normal',    'key': 'normal',    'tasks': normal},
+    ]
+    return render(request, 'board/my_board.html', {
+        'groups': groups,
+        'task_count': len(all_tasks),
+    })
+
+
+@login_required
 def mark_done(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
     if request.method == 'POST':
