@@ -119,3 +119,18 @@
 - [x] Restrict task move/reassign (menu + drag-and-drop) to admin-role users only
 - [x] Add a friendly confirmation modal before marking a task as Done
 - [x] Add a registration page at `/accounts/register/` with themed UI and login link
+
+---
+
+## Task 12 — Docker & Realtime (WebSocket)
+
+- [x] Create a `Dockerfile` for the Django app (Python, dependencies, Gunicorn/Daphne entrypoint)
+- [x] Create `docker-compose.yml` with services: `web`, `db` (PostgreSQL), and `redis`
+- [x] Add `.env.example` with required environment variables (DB, Redis, Django secret key)
+- [x] Document setup steps in comments or README — **do not run Docker or migrations** (user will run and migrate manually)
+- [x] Install and configure Django Channels for ASGI/WebSocket support
+- [x] Add `channels` and `channels-redis` to `requirements.txt`
+- [x] Configure `ASGI_APPLICATION`, channel layers (Redis), and routing in `taskpin/asgi.py`
+- [x] Create a base WebSocket consumer (e.g. board updates) wired for future realtime task actions
+- [x] Add a simple client-side WebSocket hook in the frontend (connect only; no full realtime UI yet)
+

@@ -433,7 +433,8 @@
   </style>
   {% block extra_css %}{% endblock %}
 </head>
-<body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}">
+<body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}"
+      {% if request.user.is_authenticated %}data-user-auth="true"{% endif %}>
 <div class="layout">
 
   <aside class="sidebar">
@@ -749,6 +750,38 @@
     document.body.appendChild(form);
     form.submit();
   });
+
+  /* ─────────────────────────────────────────────
+     3. WEBSOCKET — board updates (future realtime)
+  ───────────────────────────────────────────── */
+  if (document.body.dataset.userAuth === 'true') {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const boardSocket = new WebSocket(
+      wsProtocol + '//' + window.location.host + '/ws/board/'
+    );
+
+    boardSocket.onopen = function () {
+      console.info('[TaskPin] Realtime connected');
+    };
+
+    boardSocket.onmessage = function (event) {
+      try {
+        const data = JSON.parse(event.data);
+        console.info('[TaskPin] Board update:', data);
+        document.dispatchEvent(new CustomEvent('taskpin:board-update', { detail: data }));
+      } catch (err) {
+        console.warn('[TaskPin] Invalid websocket message', err);
+      }
+    };
+
+    boardSocket.onclose = function () {
+      console.info('[TaskPin] Realtime disconnected');
+    };
+
+    boardSocket.onerror = function () {
+      console.warn('[TaskPin] Realtime connection error');
+    };
+  }
 })();
 </script>
 </body>

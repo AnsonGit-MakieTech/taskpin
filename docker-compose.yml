@@ -1,0 +1,53 @@
+# TaskPin — Docker Compose
+#
+# Manual setup (do NOT skip migrations):
+#   1. cp .env.example .env          # edit SECRET_KEY and passwords if needed
+#   2. docker compose build
+#   3. docker compose up -d db redis # start database and redis first
+#   4. docker compose run --rm web python manage.py migrate
+#   5. docker compose run --rm web python manage.py createsuperuser   # optional
+#   6. docker compose up web          # start the app on http://localhost:8000
+#
+# Stop: docker compose down
+# Reset DB volume: docker compose down -v
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taskpin}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: daphne -b 0.0.0.0 -p 8000 taskpin.asgi:application
+    volumes:
+      - .:/app
+    ports:
+      - '${WEB_PORT:-8000}:8000'
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
