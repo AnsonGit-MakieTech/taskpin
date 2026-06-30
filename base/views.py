@@ -9,6 +9,7 @@ from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
 from .forms import TaskCreateForm, InviteMemberForm, RegisterForm
+from .realtime import notify_board_update
 
 
 def is_admin(user):
@@ -89,6 +90,9 @@ def task_create(request):
             + (f' and assigned to {assigned_to.get_full_name() or assigned_to.username}' if assigned_to else ''),
             task=task,
         )
+        notify_board_update('task.created', task.id, request.user.id, {
+            'assigned_to_id': task.assigned_to_id,
+        })
         return redirect('team_board')
 
     users = (
@@ -149,6 +153,9 @@ def mark_done(request, task_id):
             action=f'Marked "{task.title}" as done',
             task=task,
         )
+        notify_board_update('task.done', task.id, request.user.id, {
+            'assigned_to_id': task.assigned_to_id,
+        })
     return redirect('team_board')
 
 
@@ -172,6 +179,9 @@ def task_reassign(request, task_id):
                 action=f'Moved "{task.title}" from {old_name} to {new_name}',
                 task=task,
             )
+            notify_board_update('task.moved', task.id, request.user.id, {
+                'assigned_to_id': task.assigned_to_id,
+            })
         else:
             task.assigned_to = None
             task.status = Task.STATUS_UNASSIGNED
@@ -181,6 +191,9 @@ def task_reassign(request, task_id):
                 action=f'Unassigned "{task.title}"',
                 task=task,
             )
+            notify_board_update('task.moved', task.id, request.user.id, {
+                'assigned_to_id': None,
+            })
     return redirect('team_board')
 
 
@@ -204,6 +217,9 @@ def task_edit(request, task_id):
             action=f'Edited task "{task.title}"',
             task=task,
         )
+        notify_board_update('task.edited', task.id, request.user.id, {
+            'assigned_to_id': task.assigned_to_id,
+        })
         return redirect('team_board')
 
     users = (
@@ -228,13 +244,17 @@ def task_delete(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
     if request.method == 'POST':
         title = task.title
-        # Log before deleting so the FK reference remains valid during log creation
+        task_id = task.id
+        assigned_to_id = task.assigned_to_id
         ActivityLog.objects.create(
             actor=request.user,
             action=f'Deleted task "{title}"',
             task=task,
         )
         task.delete()
+        notify_board_update('task.deleted', task_id, request.user.id, {
+            'assigned_to_id': assigned_to_id,
+        })
     return redirect('team_board')
 
 

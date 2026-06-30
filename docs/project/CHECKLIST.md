@@ -134,3 +134,15 @@
 - [x] Create a base WebSocket consumer (e.g. board updates) wired for future realtime task actions
 - [x] Add a simple client-side WebSocket hook in the frontend (connect only; no full realtime UI yet)
 
+---
+
+## Task 13 — Static Assets & Realtime Boards
+
+- [x] Move shared CSS from templates into `static/css/base.css`
+- [x] Move page CSS into `static/css/` (`board-team.css`, `board-my.css`, `board-done.css`, `forms.css`, `auth.css`, `team.css`)
+- [x] Move shared JS into `static/js/app.js` and `static/js/realtime.js`
+- [x] Update all templates to use `{% static %}` instead of inline styles/scripts
+- [x] Broadcast task events over WebSocket from views (create, done, move, edit, delete)
+- [x] Auto-refresh Team Board, My Board, and Done pages when another user changes tasks
+- [x] Show a brief toast before refresh so users know the board is updating
+

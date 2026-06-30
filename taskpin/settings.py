@@ -15,6 +15,8 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
 _allowed = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()] if _allowed else []
+if not ALLOWED_HOSTS and DEBUG:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0']
 
 
 INSTALLED_APPS = [
@@ -108,14 +110,24 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'team_board'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Django Channels — Redis when REDIS_HOST is set (Docker), in-memory for local dev
-if os.environ.get('REDIS_HOST'):
+# Django Channels — Redis in Docker (or when REDIS_HOST points at localhost).
+# The Docker service name "redis" is unreachable outside compose; fall back to in-memory.
+_in_docker = os.path.exists('/.dockerenv')
+_redis_host = os.environ.get('REDIS_HOST', '').strip()
+_use_redis_channels = bool(
+    _redis_host
+    and (
+        _in_docker
+        or _redis_host in ('localhost', '127.0.0.1')
+    )
+)
+if _use_redis_channels:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
                 'hosts': [(
-                    os.environ.get('REDIS_HOST', '127.0.0.1'),
+                    _redis_host,
                     int(os.environ.get('REDIS_PORT', '6379')),
                 )],
             },
