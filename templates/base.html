@@ -54,6 +54,15 @@
         </svg>
         Done
       </a>
+      <a href="{% url 'activity_log' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'activity_log' %}active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Activity
+      </a>
       <a href="{% url 'team_list' %}"
          class="nav-item {% if request.resolver_match.url_name == 'team_list' or request.resolver_match.url_name == 'invite_member' %}active{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"

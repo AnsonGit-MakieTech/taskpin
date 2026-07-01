@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.team_board, name='team_board'),
     path('my/', views.my_board, name='my_board'),
     path('done/', views.done_tasks, name='done_tasks'),
+    path('activity/', views.activity_log, name='activity_log'),
     path('task/create/', views.task_create, name='task_create'),
     path('task/<int:task_id>/done/', views.mark_done, name='mark_done'),
     path('task/<int:task_id>/reassign/', views.task_reassign, name='task_reassign'),

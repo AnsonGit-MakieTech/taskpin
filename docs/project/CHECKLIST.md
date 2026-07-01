@@ -162,12 +162,12 @@
 
 ## Task 15 — Activity Log & History
 
-- [ ] Create an `activity_log` view in `base/views.py` — lists recent `ActivityLog` entries, newest first
-- [ ] Register URL `activity/` → `activity_log` in `base/urls.py`
-- [ ] Create `templates/activity/activity_log.html` — simple timeline: actor, action text, task link, timestamp
-- [ ] Paginate or limit to the most recent entries (e.g. last 50)
-- [ ] Add an "Activity" link to the sidebar (or a section on Team Board)
-- [ ] Style the page to match the theme (muted timestamps, friendly empty state)
+- [x] Create an `activity_log` view in `base/views.py` — lists recent `ActivityLog` entries, newest first
+- [x] Register URL `activity/` → `activity_log` in `base/urls.py`
+- [x] Create `templates/activity/activity_log.html` — simple timeline: actor, action text, task link, timestamp
+- [x] Paginate or limit to the most recent entries (e.g. last 50)
+- [x] Add an "Activity" link to the sidebar (or a section on Team Board)
+- [x] Style the page to match the theme (muted timestamps, friendly empty state)
 
 ---
 

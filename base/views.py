@@ -258,6 +258,22 @@ def task_delete(request, task_id):
     return redirect('team_board')
 
 
+ACTIVITY_LOG_LIMIT = 50
+
+
+@login_required
+def activity_log(request):
+    entries = (
+        ActivityLog.objects
+        .select_related('actor', 'actor__profile', 'task')
+        .order_by('-timestamp')[:ACTIVITY_LOG_LIMIT]
+    )
+    return render(request, 'activity/activity_log.html', {
+        'entries': entries,
+        'entry_count': len(entries),
+    })
+
+
 @login_required
 def team_list(request):
     members = (

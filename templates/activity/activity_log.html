@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/activity.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="activity-page">
+
+  <div class="activity-header">
+    <div>
+      <h1 class="activity-heading">Activity</h1>
+      <p class="activity-sub">Recent team actions on tasks</p>
+    </div>
+    {% if entries %}
+    <div class="activity-count-pill">
+      Latest {{ entry_count }} event{{ entry_count|pluralize }}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if entries %}
+  <div class="activity-timeline">
+    {% for entry in entries %}
+    <div class="activity-item">
+      <div class="activity-avatar"
+           style="background: {% if entry.actor and entry.actor.profile %}{{ entry.actor.profile.avatar_color }}{% else %}#64B5F6{% endif %};">
+        {% if entry.actor %}
+          {% if entry.actor.profile %}{{ entry.actor.profile.initials }}{% else %}{{ entry.actor.username|slice:":2"|upper }}{% endif %}
+        {% else %}
+          ?
+        {% endif %}
+      </div>
+
+      <div class="activity-body">
+        <p class="activity-action">{{ entry.action }}</p>
+        <div class="activity-meta">
+          {% if entry.actor %}
+          <span class="activity-actor">
+            {% if entry.actor.profile %}{{ entry.actor.profile.display_name }}{% else %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% endif %}
+          </span>
+          <span class="activity-sep">&middot;</span>
+          {% endif %}
+          <time class="activity-time" datetime="{{ entry.timestamp|date:'c' }}">
+            {{ entry.timestamp|date:"M j, Y" }} at {{ entry.timestamp|time:"g:i A" }}
+          </time>
+          {% if entry.task %}
+          <span class="activity-sep">&middot;</span>
+          <a href="{% url 'task_edit' entry.task.pk %}" class="activity-task-link">{{ entry.task.title }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div class="empty-state-title">No activity yet</div>
+    <p class="empty-state-hint">
+      When someone creates, moves, edits, or completes a task,<br>
+      it will show up here.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
