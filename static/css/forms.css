@@ -51,6 +51,7 @@
 
 .form-group input[type="text"],
 .form-group input[type="date"],
+.form-group input[type="datetime-local"],
 .form-group textarea,
 .form-group select {
   width: 100%;
@@ -69,6 +70,7 @@
 
 .form-group input[type="text"]:focus,
 .form-group input[type="date"]:focus,
+.form-group input[type="datetime-local"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: var(--orange);
@@ -193,3 +195,43 @@
   border-bottom: none;
 }
 .select-wrap select { padding-right: 34px; }
+
+@media (max-width: 768px) {
+  .form-page {
+    padding: 20px 16px 32px;
+    min-height: calc(100vh - 56px);
+  }
+
+  .form-card-body {
+    padding: 22px 20px 18px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-submit,
+  .btn-cancel {
+    min-height: 44px;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group textarea,
+  .form-group select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .btn-submit,
+  .btn-cancel {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}

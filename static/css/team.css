@@ -148,3 +148,18 @@
 }
 
 .invite-form-page .btn-submit:hover { background: #42A5F5; }
+
+@media (max-width: 768px) {
+  .team-page {
+    padding: 20px 16px 32px;
+  }
+
+  .member-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-invite {
+    min-height: 44px;
+    justify-content: center;
+  }
+}

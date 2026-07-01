@@ -19,7 +19,8 @@
   <div class="board-header">
     <div>
       <h1 class="board-title">Team Board</h1>
-      <p class="board-title-sub">Drag a note to assign it to a teammate</p>
+      <p class="board-title-sub board-title-sub--desktop">Drag a note to assign it to a teammate</p>
+      <p class="board-title-sub board-title-sub--mobile">Use <strong>Move</strong> on a note to reassign tasks</p>
     </div>
     <a href="{% url 'task_create' %}" class="btn-create">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -30,11 +31,48 @@
     </a>
   </div>
 
+  <div class="board-legend" aria-label="Board color legend">
+    <span class="board-legend-label">Legend</span>
+    <div class="board-legend-groups">
+      <div class="board-legend-group">
+        <span class="board-legend-group-title">Priority</span>
+        <ul class="board-legend-list">
+          <li><span class="legend-swatch legend-swatch--normal"></span> Normal</li>
+          <li><span class="legend-swatch legend-swatch--important"></span> Important</li>
+          <li><span class="legend-swatch legend-swatch--urgent"></span> Urgent</li>
+        </ul>
+      </div>
+      <div class="board-legend-group">
+        <span class="board-legend-group-title">Deadline</span>
+        <ul class="board-legend-list">
+          <li><span class="legend-swatch legend-swatch--due-soon"></span> Due within 24 hours</li>
+          <li><span class="legend-swatch legend-swatch--due-today"></span> Due today</li>
+          <li><span class="legend-swatch legend-swatch--overdue"></span> Overdue</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-column-tabs" role="tablist" aria-label="Team member boards">
+    <button type="button" class="board-column-tab active" role="tab" aria-selected="true"
+            data-column-index="0" id="board-tab-0">
+      Unassigned
+      <span class="board-column-tab-count">{{ unassigned_tasks|length }}</span>
+    </button>
+    {% for entry in board %}
+    <button type="button" class="board-column-tab" role="tab" aria-selected="false"
+            data-column-index="{{ forloop.counter }}" id="board-tab-{{ forloop.counter }}">
+      {% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.get_full_name|default:entry.user.username }}{% endif %}
+      <span class="board-column-tab-count">{{ entry.tasks|length }}</span>
+    </button>
+    {% endfor %}
+  </div>
+
   <div class="board-scroll-area">
     <div class="board-columns">
 
       {# ── Unassigned column ── #}
-      <div class="board-column drop-column" data-user-id="">
+      <div class="board-column drop-column board-column--active" data-user-id="" data-column-index="0">
         <div class="column-header">
           <div class="user-avatar user-avatar--unassigned" aria-hidden="true">&#8203;</div>
           <div class="column-meta">
@@ -69,7 +107,7 @@
 
       {# ── Per-user columns ── #}
       {% for entry in board %}
-      <div class="board-column drop-column" data-user-id="{{ entry.user.pk }}">
+      <div class="board-column drop-column" data-user-id="{{ entry.user.pk }}" data-column-index="{{ forloop.counter }}">
         <div class="column-header">
           <div class="user-avatar"
                style="background: {% if entry.user.profile %}{{ entry.user.profile.avatar_color }}{% else %}#FFB74D{% endif %};">

@@ -1,7 +1,10 @@
+from datetime import timedelta
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 class UserProfile(models.Model):
@@ -70,7 +73,7 @@ class Task(models.Model):
     description = models.TextField(blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_UNASSIGNED)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
-    due_date = models.DateField(null=True, blank=True)
+    due_date = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='created_tasks'
     )
@@ -93,9 +96,22 @@ class Task(models.Model):
     @property
     def is_overdue(self):
         if self.due_date and not self.is_done:
-            from django.utils import timezone
-            return self.due_date < timezone.now().date()
+            return self.due_date < timezone.now()
         return False
+
+    @property
+    def deadline_urgency(self):
+        """CSS modifier: overdue, due_soon (within 24h), or due_today."""
+        if not self.due_date or self.is_done:
+            return ''
+        now = timezone.now()
+        if self.due_date < now:
+            return 'overdue'
+        if timezone.localtime(self.due_date).date() == timezone.localtime(now).date():
+            return 'due_today'
+        if self.due_date <= now + timedelta(hours=24):
+            return 'due_soon'
+        return ''
 
 
 class ActivityLog(models.Model):

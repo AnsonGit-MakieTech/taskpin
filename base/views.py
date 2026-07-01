@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.utils import timezone
 from django.db.models import Case, When, IntegerField, Count, Q
 from django.http import HttpResponseForbidden
@@ -10,14 +11,8 @@ from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
 from .forms import TaskCreateForm, InviteMemberForm, RegisterForm, ProfileSettingsForm
+from .permissions import is_admin, can_manage_task
 from .realtime import notify_board_update
-
-
-def is_admin(user):
-    if user.is_superuser:
-        return True
-    profile = getattr(user, 'profile', None)
-    return profile is not None and profile.role == 'admin'
 
 
 def admin_required(view_func):
@@ -145,6 +140,8 @@ def done_tasks(request):
 @login_required
 def mark_done(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
+    if not can_manage_task(request.user, task):
+        return HttpResponseForbidden('You cannot mark this task as done.')
     if request.method == 'POST':
         task.status = Task.STATUS_DONE
         task.completed_at = timezone.now()
@@ -201,6 +198,8 @@ def task_reassign(request, task_id):
 @login_required
 def task_edit(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
+    if not can_manage_task(request.user, task):
+        return HttpResponseForbidden('You cannot edit this task.')
     form = TaskCreateForm(request.POST or None, instance=task)
 
     if request.method == 'POST' and form.is_valid():
@@ -243,6 +242,8 @@ def task_edit(request, task_id):
 @login_required
 def task_delete(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
+    if not can_manage_task(request.user, task):
+        return HttpResponseForbidden('You cannot delete this task.')
     if request.method == 'POST':
         title = task.title
         task_id = task.id
@@ -259,19 +260,21 @@ def task_delete(request, task_id):
     return redirect('team_board')
 
 
-ACTIVITY_LOG_LIMIT = 50
+ACTIVITY_LOG_PAGE_SIZE = 20
 
 
 @login_required
 def activity_log(request):
-    entries = (
+    queryset = (
         ActivityLog.objects
         .select_related('actor', 'actor__profile', 'task')
-        .order_by('-timestamp')[:ACTIVITY_LOG_LIMIT]
+        .order_by('-timestamp')
     )
+    paginator = Paginator(queryset, ACTIVITY_LOG_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'activity/activity_log.html', {
-        'entries': entries,
-        'entry_count': len(entries),
+        'page_obj': page_obj,
+        'entries': page_obj.object_list,
     })
 
 

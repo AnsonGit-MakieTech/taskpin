@@ -185,21 +185,24 @@
 
 ## Task 17 — Mobile-Responsive Layout
 
-- [ ] Add responsive breakpoints in `static/css/base.css` and board CSS files
-- [ ] Collapse sidebar to a compact or slide-out menu on small screens
-- [ ] On mobile Team Board: show one member column at a time (tabs or horizontal snap scroll)
-- [ ] Ensure sticky notes and action buttons remain tappable (min touch target size)
-- [ ] Keep drag-and-drop on desktop; use existing Move dropdown as the primary mobile reassignment path
-- [ ] Test My Board, Done, and login pages at phone-width viewports
+- [x] Add responsive breakpoints in `static/css/base.css` and board CSS files
+- [x] Collapse sidebar to a compact or slide-out menu on small screens
+- [x] On mobile Team Board: show one member column at a time (tabs or horizontal snap scroll)
+- [x] Ensure sticky notes and action buttons remain tappable (min touch target size)
+- [x] Keep drag-and-drop on desktop; use existing Move dropdown as the primary mobile reassignment path
+- [x] Test My Board, Done, and login pages at phone-width viewports
 
 ---
 
-## Task 18 — REST API & Production Deployment
+## Task 18 — Revisions, Features & Bug Fixes
 
-- [ ] Add `djangorestframework` to `requirements.txt` and register in `INSTALLED_APPS`
-- [ ] Create read-only API endpoints for tasks and team members (list + detail)
-- [ ] Add token or session authentication for API access
-- [ ] Add a `README.md` with local setup, Docker setup, and production deploy steps
-- [ ] Document Nginx reverse proxy + Daphne/Gunicorn systemd service configuration
-- [ ] Add `collectstatic` step to Docker/production docs; verify WhiteNoise serves static files
-- [ ] Set production-safe defaults: `DEBUG=False`, strong `SECRET_KEY`, secure cookie settings checklist
+### Revisions & additions
+- [x] Paginate the Activity page so users can browse past events (20 per page)
+- [x] Expand long task descriptions on cards with **Show more / Show less**
+- [x] Change deadline to **date & time** (`DateTimeField`) with datetime picker on create/edit
+- [x] Color-code deadline badges: due within 24h, due today, overdue
+- [x] Add a **Legend** on Team Board for priority note colors and deadline badge colors
+
+### Bug fixes
+- [x] Restrict **Done**, **Edit**, and **Delete** to admin, task creator, or assignee only (server + UI)
+- [x] Hide task action menu when the user has no permitted actions

@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from .models import Task, UserProfile
+
+DATETIME_LOCAL_FORMAT = '%Y-%m-%dT%H:%M'
 
 
 class TaskCreateForm(forms.ModelForm):
@@ -24,23 +27,36 @@ class TaskCreateForm(forms.ModelForm):
                 'placeholder': 'Optional details…',
                 'rows': 3,
             }),
-            'due_date': forms.DateInput(attrs={
-                'type': 'date',
-            }),
+            'due_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local'},
+                format=DATETIME_LOCAL_FORMAT,
+            ),
         }
         labels = {
             'title': 'Task title',
             'description': 'Description',
             'priority': 'Priority',
-            'due_date': 'Due date',
+            'due_date': 'Due date & time',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['due_date'].required = False
+        self.fields['due_date'].input_formats = [
+            DATETIME_LOCAL_FORMAT,
+            '%Y-%m-%d %H:%M:%S',
+            '%Y-%m-%d %H:%M',
+        ]
         # Show full name in the assign_to dropdown when available
         self.fields['assign_to'].label_from_instance = lambda u: (
             u.get_full_name() or u.username
         )
+        if self.instance and self.instance.pk and self.instance.due_date:
+            local_due = timezone.localtime(self.instance.due_date)
+            self.initial.setdefault(
+                'due_date',
+                local_due.strftime(DATETIME_LOCAL_FORMAT),
+            )
 
 
 class InviteMemberForm(forms.Form):

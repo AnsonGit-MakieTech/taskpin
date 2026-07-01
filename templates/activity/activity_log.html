@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static taskpin_tags %}
 
 {% block title %}Activity — TaskPin{% endblock %}
 
@@ -13,11 +13,11 @@
   <div class="activity-header">
     <div>
       <h1 class="activity-heading">Activity</h1>
-      <p class="activity-sub">Recent team actions on tasks</p>
+      <p class="activity-sub">Team actions on tasks</p>
     </div>
-    {% if entries %}
+    {% if page_obj.paginator.count %}
     <div class="activity-count-pill">
-      Latest {{ entry_count }} event{{ entry_count|pluralize }}
+      {{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}
     </div>
     {% endif %}
   </div>
@@ -47,15 +47,39 @@
           <time class="activity-time" datetime="{{ entry.timestamp|date:'c' }}">
             {{ entry.timestamp|date:"M j, Y" }} at {{ entry.timestamp|time:"g:i A" }}
           </time>
-          {% if entry.task %}
+          {% if entry.task and entry.task|can_manage_task_filter:request.user %}
           <span class="activity-sep">&middot;</span>
           <a href="{% url 'task_edit' entry.task.pk %}" class="activity-task-link">{{ entry.task.title }}</a>
+          {% elif entry.task %}
+          <span class="activity-sep">&middot;</span>
+          <span class="activity-task-name">{{ entry.task.title }}</span>
           {% endif %}
         </div>
       </div>
     </div>
     {% endfor %}
   </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="activity-pagination" aria-label="Activity pages">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="activity-page-link">&larr; Newer</a>
+    {% else %}
+    <span class="activity-page-link activity-page-link--disabled">&larr; Newer</span>
+    {% endif %}
+
+    <span class="activity-page-status">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="activity-page-link">Older &rarr;</a>
+    {% else %}
+    <span class="activity-page-link activity-page-link--disabled">Older &rarr;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
   {% else %}
   <div class="empty-state">
     <div class="empty-state-icon">

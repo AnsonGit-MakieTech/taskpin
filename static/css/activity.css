@@ -103,6 +103,49 @@
 
 .activity-task-link:hover { text-decoration: underline; }
 
+.activity-task-name {
+  color: var(--text-muted);
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.activity-page-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.activity-page-link:hover { text-decoration: underline; }
+
+.activity-page-link--disabled {
+  color: #ccc;
+  pointer-events: none;
+}
+
+.activity-page-status {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -136,4 +179,24 @@
   font-size: 13px;
   color: #bbb;
   line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .activity-page {
+    padding: 20px 16px 32px;
+  }
+
+  .activity-header {
+    margin-bottom: 20px;
+  }
+
+  .activity-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .activity-sep {
+    display: none;
+  }
 }

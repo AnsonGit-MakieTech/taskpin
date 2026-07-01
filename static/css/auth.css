@@ -188,3 +188,31 @@ input:focus {
 }
 
 .auth-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 768px) {
+  body {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 32px;
+  }
+
+  .login-card,
+  .auth-card {
+    padding: 24px 20px 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-login,
+  .auth-wrap .btn-submit {
+    min-height: 48px;
+  }
+
+  input[type="text"],
+  input[type="password"] {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}

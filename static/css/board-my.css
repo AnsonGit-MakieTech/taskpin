@@ -123,3 +123,13 @@
 }
 
 .empty-state-action:hover { background: #F4A020; }
+
+@media (max-width: 768px) {
+  .myboard-page {
+    padding: 20px 16px 32px;
+  }
+
+  .myboard-header {
+    margin-bottom: 20px;
+  }
+}

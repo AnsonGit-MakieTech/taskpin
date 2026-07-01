@@ -49,6 +49,75 @@
 }
 .btn-create:hover { background: #F4A020; }
 
+/* ── Board legend ── */
+.board-legend {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 28px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.board-legend-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-muted);
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+.board-legend-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 28px;
+}
+
+.board-legend-group-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.board-legend-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.board-legend-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+}
+
+.legend-swatch--normal { background: var(--yellow); }
+.legend-swatch--important { background: var(--orange); }
+.legend-swatch--urgent { background: var(--red); }
+.legend-swatch--due-soon { background: #FFF3E0; box-shadow: inset 0 0 0 1px #FFB74D; }
+.legend-swatch--due-today { background: #FFF8E1; box-shadow: inset 0 0 0 1px #FBC02D; }
+.legend-swatch--overdue { background: #FFEBEE; box-shadow: inset 0 0 0 1px #EF5350; }
+
 /* ── Scrollable board area ── */
 .board-scroll-area {
   flex: 1;
@@ -176,4 +245,135 @@
   outline-offset: 4px;
   border-radius: var(--radius);
   background: #FFF8E8;
+}
+
+/* ── Mobile column tabs (hidden on desktop) ── */
+.board-column-tabs {
+  display: none;
+}
+
+.board-title-sub--mobile strong {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .board-page {
+    height: calc(100vh - 56px);
+  }
+
+  .board-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .board-legend {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .board-legend-groups {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .board-title-sub--desktop {
+    display: none;
+  }
+
+  .board-title-sub--mobile {
+    display: block;
+  }
+
+  .btn-create {
+    justify-content: center;
+    min-height: 44px;
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+
+  .board-column-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .board-column-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .board-column-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 8px 14px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+
+  .board-column-tab.active {
+    background: #FFF8E8;
+    border-color: var(--orange);
+    color: #D4620A;
+  }
+
+  .board-column-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .06);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .board-column-tab.active .board-column-tab-count {
+    background: rgba(212, 98, 10, .12);
+  }
+
+  .board-scroll-area {
+    padding: 16px;
+    overflow-x: hidden;
+  }
+
+  .board-columns {
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    gap: 0;
+  }
+
+  .board-column {
+    width: 100%;
+    display: none;
+  }
+
+  .board-column.board-column--active {
+    display: flex;
+  }
+
+  .drop-column.drag-over {
+    outline: none;
+    background: transparent;
+  }
 }

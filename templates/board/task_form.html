@@ -78,8 +78,8 @@
           </div>
 
           <div class="form-group">
-            <label for="id_due_date">Due date</label>
-            <input type="date" name="due_date" id="id_due_date"
+            <label for="id_due_date">Due date &amp; time</label>
+            <input type="datetime-local" name="due_date" id="id_due_date"
                    value="{{ form.due_date.value|default:'' }}">
           </div>
         </div>

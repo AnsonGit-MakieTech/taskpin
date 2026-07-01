@@ -2,6 +2,10 @@
   const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
   const canMove = document.body.dataset.canMove === 'true';
 
+  function dragEnabled() {
+    return canMove && !window.matchMedia('(max-width: 768px)').matches;
+  }
+
   /* ─────────────────────────────────────────────
      0. CONFIRM MODAL
   ───────────────────────────────────────────── */
@@ -42,6 +46,16 @@
   });
 
   document.addEventListener('click', function (e) {
+    const toggleBtn = e.target.closest('.task-description-toggle');
+    if (toggleBtn) {
+      const wrap = toggleBtn.closest('.task-description-wrap');
+      const desc = wrap.querySelector('.task-description');
+      const expanded = desc.classList.toggle('task-description--expanded');
+      desc.classList.toggle('task-description--collapsed', !expanded);
+      toggleBtn.textContent = expanded ? 'Show less' : 'Show more';
+      return;
+    }
+
     const doneBtn = e.target.closest('.btn-done-confirm');
     if (doneBtn) {
       e.preventDefault();
@@ -123,7 +137,7 @@
   let draggedTaskId = null;
 
   document.addEventListener('dragstart', function (e) {
-    if (!canMove) {
+    if (!dragEnabled()) {
       e.preventDefault();
       return;
     }
@@ -150,7 +164,7 @@
   });
 
   document.addEventListener('dragover', function (e) {
-    if (!canMove) return;
+    if (!dragEnabled()) return;
     const col = e.target.closest('.drop-column');
     if (col && draggedTaskId) {
       e.preventDefault();
@@ -170,7 +184,7 @@
   });
 
   document.addEventListener('drop', function (e) {
-    if (!canMove) return;
+    if (!dragEnabled()) return;
     const col = e.target.closest('.drop-column');
     if (!col || !draggedTaskId) return;
     e.preventDefault();

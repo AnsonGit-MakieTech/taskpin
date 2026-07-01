@@ -1,4 +1,4 @@
-from .views import is_admin
+from .permissions import is_admin
 
 
 def permissions(request):
