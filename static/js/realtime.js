@@ -74,6 +74,19 @@
     }, reconnectDelay);
   }
 
+  function ensureConnected() {
+    if (
+      intentionallyClosing ||
+      (socket && socket.readyState === WebSocket.OPEN)
+    ) {
+      return;
+    }
+    if (socket && socket.readyState === WebSocket.CONNECTING) {
+      return;
+    }
+    connect();
+  }
+
   function showRealtimeToast(message) {
     let toast = document.getElementById('realtime-toast');
     if (!toast) {
@@ -107,6 +120,12 @@
     intentionallyClosing = true;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.close();
+    }
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+      ensureConnected();
     }
   });
 

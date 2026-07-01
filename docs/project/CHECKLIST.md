@@ -146,3 +146,60 @@
 - [x] Auto-refresh Team Board, My Board, and Done pages when another user changes tasks
 - [x] Show a brief toast before refresh so users know the board is updating
 
+---
+
+## Task 14 — Realtime Reliability
+
+- [x] Use in-memory channel layer for local `runserver`; use Redis only inside Docker (or when `REDIS_HOST` is localhost)
+- [x] Default `ALLOWED_HOSTS` in `DEBUG` so WebSocket origin validation works locally
+- [x] Connect WebSocket only on board pages (Team, My, Done) — not on forms or team admin pages
+- [x] Add auto-reconnect with backoff when the WebSocket drops unexpectedly
+- [x] Refresh all open board tabs when any user changes tasks (including same user in another tab)
+- [x] Log broadcast failures in `notify_board_update()` instead of failing silently
+- [x] Document local vs Docker env vars in `.env.example` (`REDIS_HOST`, `POSTGRES_HOST`)
+
+---
+
+## Task 15 — Activity Log & History
+
+- [ ] Create an `activity_log` view in `base/views.py` — lists recent `ActivityLog` entries, newest first
+- [ ] Register URL `activity/` → `activity_log` in `base/urls.py`
+- [ ] Create `templates/activity/activity_log.html` — simple timeline: actor, action text, task link, timestamp
+- [ ] Paginate or limit to the most recent entries (e.g. last 50)
+- [ ] Add an "Activity" link to the sidebar (or a section on Team Board)
+- [ ] Style the page to match the theme (muted timestamps, friendly empty state)
+
+---
+
+## Task 16 — Settings & User Profile
+
+- [ ] Create a `settings` view in `base/views.py` — profile form for name and optional avatar initials
+- [ ] Add a password-change form using Django's built-in password change views
+- [ ] Register URLs: `settings/` → settings page, password change under `settings/password/`
+- [ ] Create `templates/settings/settings.html` and `static/css/settings.css`
+- [ ] Wire the sidebar **Settings** link to the new page (replace the `#` placeholder)
+- [ ] Fix self-registration so new users get the `member` role by default (not `admin`)
+- [ ] Show current role (read-only) on the settings page
+
+---
+
+## Task 17 — Mobile-Responsive Layout
+
+- [ ] Add responsive breakpoints in `static/css/base.css` and board CSS files
+- [ ] Collapse sidebar to a compact or slide-out menu on small screens
+- [ ] On mobile Team Board: show one member column at a time (tabs or horizontal snap scroll)
+- [ ] Ensure sticky notes and action buttons remain tappable (min touch target size)
+- [ ] Keep drag-and-drop on desktop; use existing Move dropdown as the primary mobile reassignment path
+- [ ] Test My Board, Done, and login pages at phone-width viewports
+
+---
+
+## Task 18 — REST API & Production Deployment
+
+- [ ] Add `djangorestframework` to `requirements.txt` and register in `INSTALLED_APPS`
+- [ ] Create read-only API endpoints for tasks and team members (list + detail)
+- [ ] Add token or session authentication for API access
+- [ ] Add a `README.md` with local setup, Docker setup, and production deploy steps
+- [ ] Document Nginx reverse proxy + Daphne/Gunicorn systemd service configuration
+- [ ] Add `collectstatic` step to Docker/production docs; verify WhiteNoise serves static files
+- [ ] Set production-safe defaults: `DEBUG=False`, strong `SECRET_KEY`, secure cookie settings checklist

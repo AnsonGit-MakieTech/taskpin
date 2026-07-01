@@ -126,6 +126,6 @@
 
 {% block extra_js %}{% endblock %}
 <script src="{% static 'js/app.js' %}"></script>
-<script src="{% static 'js/realtime.js' %}"></script>
+{% block realtime_js %}{% endblock %}
 </body>
 </html>
