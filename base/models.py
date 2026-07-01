@@ -14,8 +14,15 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    avatar_initials = models.CharField(
+        max_length=2,
+        blank=True,
+        help_text='Optional override for avatar initials (max 2 characters).',
+    )
 
     def initials(self):
+        if self.avatar_initials:
+            return self.avatar_initials[:2].upper()
         first = self.user.first_name[:1].upper() if self.user.first_name else ''
         last = self.user.last_name[:1].upper() if self.user.last_name else ''
         if first or last:

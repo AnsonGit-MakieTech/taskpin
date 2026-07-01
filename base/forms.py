@@ -93,3 +93,50 @@ class RegisterForm(forms.Form):
         if p1 and p2 and p1 != p2:
             raise forms.ValidationError('Passwords do not match.')
         return cleaned
+
+
+class ProfileSettingsForm(forms.Form):
+    first_name = forms.CharField(
+        max_length=150,
+        required=False,
+        label='First name',
+    )
+    last_name = forms.CharField(
+        max_length=150,
+        required=False,
+        label='Last name',
+    )
+    avatar_initials = forms.CharField(
+        max_length=2,
+        required=False,
+        label='Avatar initials',
+        help_text='Optional. Leave blank to use your name initials.',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'e.g. JD',
+            'maxlength': '2',
+            'style': 'text-transform: uppercase;',
+        }),
+    )
+
+    def __init__(self, *args, user=None, profile=None, **kwargs):
+        self.user = user
+        self.profile = profile
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields['first_name'].initial = user.first_name
+            self.fields['last_name'].initial = user.last_name
+        if profile is not None:
+            self.fields['avatar_initials'].initial = profile.avatar_initials
+
+    def clean_avatar_initials(self):
+        value = self.cleaned_data.get('avatar_initials', '').strip().upper()
+        if value and not value.isalnum():
+            raise forms.ValidationError('Use letters or numbers only.')
+        return value
+
+    def save(self):
+        self.user.first_name = self.cleaned_data['first_name'].strip()
+        self.user.last_name = self.cleaned_data['last_name'].strip()
+        self.user.save(update_fields=['first_name', 'last_name'])
+        self.profile.avatar_initials = self.cleaned_data['avatar_initials']
+        self.profile.save(update_fields=['avatar_initials'])

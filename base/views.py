@@ -2,13 +2,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Case, When, IntegerField, Count, Q
 from django.http import HttpResponseForbidden
 from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
-from .forms import TaskCreateForm, InviteMemberForm, RegisterForm
+from .forms import TaskCreateForm, InviteMemberForm, RegisterForm, ProfileSettingsForm
 from .realtime import notify_board_update
 
 
@@ -271,6 +272,29 @@ def activity_log(request):
     return render(request, 'activity/activity_log.html', {
         'entries': entries,
         'entry_count': len(entries),
+    })
+
+
+@login_required
+def user_settings(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    form = ProfileSettingsForm(
+        request.POST or None,
+        user=request.user,
+        profile=profile,
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profile updated.')
+        return redirect('user_settings')
+
+    role_label = 'Admin' if is_admin(request.user) else profile.get_role_display()
+
+    return render(request, 'settings/settings.html', {
+        'form': form,
+        'profile': profile,
+        'role_label': role_label,
     })
 
 

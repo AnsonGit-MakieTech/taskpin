@@ -173,13 +173,13 @@
 
 ## Task 16 — Settings & User Profile
 
-- [ ] Create a `settings` view in `base/views.py` — profile form for name and optional avatar initials
-- [ ] Add a password-change form using Django's built-in password change views
-- [ ] Register URLs: `settings/` → settings page, password change under `settings/password/`
-- [ ] Create `templates/settings/settings.html` and `static/css/settings.css`
-- [ ] Wire the sidebar **Settings** link to the new page (replace the `#` placeholder)
-- [ ] Fix self-registration so new users get the `member` role by default (not `admin`)
-- [ ] Show current role (read-only) on the settings page
+- [x] Create a `settings` view in `base/views.py` — profile form for name and optional avatar initials
+- [x] Add a password-change form using Django's built-in password change views
+- [x] Register URLs: `settings/` → settings page, password change under `settings/password/`
+- [x] Create `templates/settings/settings.html` and `static/css/settings.css`
+- [x] Wire the sidebar **Settings** link to the new page (replace the `#` placeholder)
+- [x] Self-registration assigns `admin` role — first user is creating their own team
+- [x] Show current role (read-only) on the settings page
 
 ---
 

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/forms.css' %}">
+<link rel="stylesheet" href="{% static 'css/settings.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-heading">Settings</h1>
+      <p class="settings-sub">Manage your profile and account</p>
+    </div>
+    <div class="settings-avatar-preview"
+         style="background: {{ profile.avatar_color }};">
+      {{ profile.initials }}
+    </div>
+  </div>
+
+  <div class="settings-grid">
+
+    <section class="settings-card">
+      <h2 class="settings-card-title">Profile</h2>
+      <p class="settings-card-desc">Your name appears on task boards and activity logs.</p>
+
+      <form method="post" class="settings-form">
+        {% csrf_token %}
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="id_first_name">First name</label>
+            <input type="text" name="first_name" id="id_first_name"
+                   value="{{ form.first_name.value|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_last_name">Last name</label>
+            <input type="text" name="last_name" id="id_last_name"
+                   value="{{ form.last_name.value|default:'' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="id_avatar_initials">Avatar initials</label>
+          <input type="text" name="avatar_initials" id="id_avatar_initials"
+                 value="{{ form.avatar_initials.value|default:'' }}"
+                 maxlength="2" placeholder="e.g. JD" class="input-initials">
+          {% if form.avatar_initials.errors %}
+            <p class="field-error">{{ form.avatar_initials.errors.0 }}</p>
+          {% else %}
+            <p class="field-hint">{{ form.avatar_initials.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>Role</label>
+          <div class="settings-role-readonly">
+            <span class="settings-role-badge settings-role-badge--{% if role_label == 'Admin' %}admin{% else %}member{% endif %}">
+              {{ role_label }}
+            </span>
+            <span class="field-hint">Contact an admin to change your role.</span>
+          </div>
+        </div>
+
+        <div class="form-actions settings-form-actions">
+          <button type="submit" class="btn-submit">Save Profile</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="settings-card">
+      <h2 class="settings-card-title">Account</h2>
+      <p class="settings-card-desc">Signed in as <strong>@{{ request.user.username }}</strong></p>
+
+      <div class="settings-account-row">
+        <div>
+          <div class="settings-account-label">Password</div>
+          <div class="settings-account-hint">Update your login password</div>
+        </div>
+        <a href="{% url 'password_change' %}" class="btn-settings-link">Change password</a>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+{% endblock %}
