@@ -11,7 +11,7 @@ from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
 from .forms import TaskCreateForm, InviteMemberForm, RegisterForm, ProfileSettingsForm
-from .permissions import is_admin, can_manage_task
+from .permissions import is_admin, can_manage_task, can_delete_task
 from .realtime import notify_board_update
 
 
@@ -143,12 +143,19 @@ def mark_done(request, task_id):
     if not can_manage_task(request.user, task):
         return HttpResponseForbidden('You cannot mark this task as done.')
     if request.method == 'POST':
+        remarks = request.POST.get('completion_remarks', '').strip()[:500]
         task.status = Task.STATUS_DONE
         task.completed_at = timezone.now()
+        task.completion_remarks = remarks
         task.save()
+        action = f'Marked "{task.title}" as done'
+        if remarks:
+            preview = remarks if len(remarks) <= 120 else remarks[:117] + '…'
+            action = f'{action} — {preview}'
+        action = action[:300]
         ActivityLog.objects.create(
             actor=request.user,
-            action=f'Marked "{task.title}" as done',
+            action=action,
             task=task,
         )
         notify_board_update('task.done', task.id, request.user.id, {
@@ -242,7 +249,7 @@ def task_edit(request, task_id):
 @login_required
 def task_delete(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
-    if not can_manage_task(request.user, task):
+    if not can_delete_task(request.user, task):
         return HttpResponseForbidden('You cannot delete this task.')
     if request.method == 'POST':
         title = task.title

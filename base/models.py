@@ -82,6 +82,10 @@ class Task(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    completion_remarks = models.TextField(
+        blank=True,
+        help_text='Optional notes added when the task was marked done.',
+    )
 
     class Meta:
         ordering = ['-created_at']

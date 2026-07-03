@@ -4,7 +4,7 @@
      data-task-id="{{ task.id }}">
 
   {# ── Card header: actions menu ── #}
-  {% if task|can_manage_task_filter:request.user or can_move_tasks %}
+  {% if task|can_manage_task_filter:request.user or task|can_delete_task_filter:request.user or can_move_tasks %}
   <div class="task-card-actions">
     <div class="card-menu" data-menu="{{ task.id }}">
       <button type="button" class="card-menu-trigger" onclick="toggleMenu({{ task.id }}, this)" title="Options">
@@ -46,8 +46,7 @@
           </select>
         </form>
         {% endif %}
-        {% if task|can_manage_task_filter:request.user %}
-        <form method="post" action="{% url 'task_delete' task.id %}" class="delete-form">
+        {% if task|can_delete_task_filter:request.user %}
           {% csrf_token %}
           <button type="button" class="card-menu-item card-menu-item--delete btn-delete-task"
                   data-task-title="{{ task.title }}">

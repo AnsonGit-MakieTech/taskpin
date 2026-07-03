@@ -209,4 +209,13 @@
 
 ---
 
-## Task 19 - 
+## Task 19 — Done Remarks & Delete Permissions
+
+### Revisions & additions
+- [x] Optional **remarks** field when marking a task done (modal textarea, saved on task)
+- [x] Show completion remarks on the **Done** page
+- [x] Include remarks preview in the **Activity** log when provided
+
+### Permission revision
+- [x] **Delete** restricted to admin and task owner (creator) only — assignees cannot delete
+- [x] Assignees may still **Edit** and mark **Done**; enforced in views and card menu UI

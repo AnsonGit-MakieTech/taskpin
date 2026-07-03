@@ -60,6 +60,9 @@
           </span>
           {% endif %}
         </div>
+        {% if task.completion_remarks %}
+        <p class="done-remarks">{{ task.completion_remarks }}</p>
+        {% endif %}
       </div>
 
       <div class="done-completed-at">

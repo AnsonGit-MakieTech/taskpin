@@ -14,6 +14,8 @@
   const modalMessage = document.getElementById('confirm-message');
   const modalOk = document.getElementById('confirm-ok');
   const modalCancel = document.getElementById('confirm-cancel');
+  const remarksWrap = document.getElementById('confirm-remarks-wrap');
+  const remarksField = document.getElementById('confirm-remarks');
   let pendingForm = null;
 
   function openConfirm(opts) {
@@ -22,6 +24,15 @@
     modalOk.textContent = opts.okLabel;
     modalOk.className = 'btn-confirm-ok' + (opts.okClass ? ' ' + opts.okClass : '');
     pendingForm = opts.form;
+    if (remarksWrap && remarksField) {
+      if (opts.showRemarks) {
+        remarksWrap.hidden = false;
+        remarksField.value = '';
+      } else {
+        remarksWrap.hidden = true;
+        remarksField.value = '';
+      }
+    }
     modal.hidden = false;
     document.body.classList.add('modal-open');
   }
@@ -31,13 +42,31 @@
     document.body.classList.remove('modal-open');
     pendingForm = null;
     modalOk.className = 'btn-confirm-ok';
+    if (remarksWrap) {
+      remarksWrap.hidden = true;
+    }
+    if (remarksField) {
+      remarksField.value = '';
+    }
   }
 
   modalCancel.addEventListener('click', closeConfirm);
   modal.querySelector('.confirm-backdrop').addEventListener('click', closeConfirm);
 
   modalOk.addEventListener('click', function () {
-    if (pendingForm) pendingForm.submit();
+    if (pendingForm) {
+      if (remarksField && !remarksWrap.hidden) {
+        let remarksInput = pendingForm.querySelector('input[name="completion_remarks"]');
+        if (!remarksInput) {
+          remarksInput = document.createElement('input');
+          remarksInput.type = 'hidden';
+          remarksInput.name = 'completion_remarks';
+          pendingForm.appendChild(remarksInput);
+        }
+        remarksInput.value = remarksField.value.trim();
+      }
+      pendingForm.submit();
+    }
     closeConfirm();
   });
 
@@ -66,6 +95,7 @@
         okLabel: 'Yes, mark done',
         okClass: 'btn-confirm-ok--success',
         form: doneBtn.closest('form'),
+        showRemarks: true,
       });
       return;
     }
