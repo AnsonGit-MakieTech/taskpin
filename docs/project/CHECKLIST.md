@@ -206,3 +206,7 @@
 ### Bug fixes
 - [x] Restrict **Done**, **Edit**, and **Delete** to admin, task creator, or assignee only (server + UI)
 - [x] Hide task action menu when the user has no permitted actions
+
+---
+
+## Task 19 - 

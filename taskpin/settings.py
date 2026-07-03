@@ -18,6 +18,9 @@ ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()] if _allowe
 if not ALLOWED_HOSTS and DEBUG:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', '0.0.0.0']
 
+CSRF_TRUSTED_ORIGINS = [ 
+    'https://taskmanager.billingko.com'
+]
 
 INSTALLED_APPS = [
     'daphne',
