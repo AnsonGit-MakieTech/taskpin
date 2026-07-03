@@ -105,6 +105,11 @@
       return;
     }
 
+    const currentUserId = document.body.dataset.userId;
+    if (currentUserId && data.actor_id && String(data.actor_id) === String(currentUserId)) {
+      return;
+    }
+
     showRealtimeToast('Board updated — refreshing…');
 
     if (reloadTimer) {

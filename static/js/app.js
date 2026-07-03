@@ -6,6 +6,25 @@
     return canMove && !window.matchMedia('(max-width: 768px)').matches;
   }
 
+  function refreshDraggability() {
+    const enabled = dragEnabled();
+    document.querySelectorAll('.task-card[draggable]').forEach(function (card) {
+      if (enabled) {
+        card.setAttribute('draggable', 'true');
+        card.classList.remove('task-card--no-drag');
+      } else {
+        card.setAttribute('draggable', 'false');
+        card.classList.add('task-card--no-drag');
+      }
+    });
+  }
+
+  window.TaskPinBoard = {
+    refreshDraggability: refreshDraggability,
+  };
+
+  document.addEventListener('DOMContentLoaded', refreshDraggability);
+
   /* ─────────────────────────────────────────────
      0. CONFIRM MODAL
   ───────────────────────────────────────────── */
@@ -223,23 +242,53 @@
     const userId = col.dataset.userId;
     const taskId = draggedTaskId;
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/task/' + taskId + '/reassign/';
+    if (window.TaskPinTeamBoard && window.TaskPinTeamBoard.markDragDrop) {
+      window.TaskPinTeamBoard.markDragDrop();
+    }
 
-    const csrf = document.createElement('input');
-    csrf.type  = 'hidden';
-    csrf.name  = 'csrfmiddlewaretoken';
-    csrf.value = csrfToken;
-    form.appendChild(csrf);
+    fetch('/task/' + taskId + '/reassign/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrfToken,
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      body: new URLSearchParams({
+        csrfmiddlewaretoken: csrfToken,
+        assigned_to: userId,
+      }),
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Reassign failed');
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (data.ok && window.TaskPinTeamBoard && window.TaskPinTeamBoard.onTaskMoved) {
+          window.TaskPinTeamBoard.onTaskMoved(data.task_id, data.assigned_to_id);
+        }
+      })
+      .catch(function () {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/task/' + taskId + '/reassign/';
 
-    const field = document.createElement('input');
-    field.type  = 'hidden';
-    field.name  = 'assigned_to';
-    field.value = userId;
-    form.appendChild(field);
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = csrfToken;
+        form.appendChild(csrf);
 
-    document.body.appendChild(form);
-    form.submit();
+        const field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = 'assigned_to';
+        field.value = userId;
+        form.appendChild(field);
+
+        document.body.appendChild(form);
+        form.submit();
+      });
   });
 })();

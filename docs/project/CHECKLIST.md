@@ -219,3 +219,20 @@
 ### Permission revision
 - [x] **Delete** restricted to admin and task owner (creator) only — assignees cannot delete
 - [x] Assignees may still **Edit** and mark **Done**; enforced in views and card menu UI
+
+---
+
+## Task 20 — Team Board Member Grid & Task Panel
+
+### Layout revision (scales to ~100 members)
+- [x] Replace wide task columns with a compact **member grid** — tiles show name, avatar, and task count only
+- [x] Add **member search** to filter the grid on large teams
+- [x] Click a member or **Unassigned** tile to open an integrated **task panel** on the right (split layout, not a modal)
+- [x] Task panel lists all notes for that member/unassigned bucket; member grid stays visible for drag-and-drop
+
+### Drag-and-drop revision
+- [x] Drag tasks from the open panel and drop onto any member/unassigned tile to reassign
+- [x] Highlight drop targets while dragging (admin only, desktop)
+- [x] Keep **Move** dropdown on mobile when drag-and-drop is disabled
+
+

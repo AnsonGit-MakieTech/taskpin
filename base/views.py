@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.db.models import Case, When, IntegerField, Count, Q
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
@@ -198,6 +198,12 @@ def task_reassign(request, task_id):
             )
             notify_board_update('task.moved', task.id, request.user.id, {
                 'assigned_to_id': None,
+            })
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'ok': True,
+                'task_id': task.id,
+                'assigned_to_id': task.assigned_to_id,
             })
     return redirect('team_board')
 
