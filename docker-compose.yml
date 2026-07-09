@@ -25,10 +25,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    command: redis-server --save "" --appendonly no --tcp-keepalive 60 --timeout 0
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -38,8 +38,7 @@ services:
 
   web:
     build: .
-    command: daphne -b 0.0.0.0 -p 8000 taskpin.asgi:application
-    restart: unless-stopped
+    command: daphne -b 0.0.0.0 -p 8000 taskpin.asgi:application 
     volumes:
       - .:/app
     ports:

@@ -120,22 +120,27 @@ LOGOUT_REDIRECT_URL = 'login'
 # The Docker service name "redis" is unreachable outside compose; fall back to in-memory.
 _in_docker = os.path.exists('/.dockerenv')
 _redis_host = os.environ.get('REDIS_HOST', '').strip()
-_use_redis_channels = bool(
-    _redis_host
-    and (
-        _in_docker
-        or _redis_host in ('localhost', '127.0.0.1')
-    )
+_redis_port = int(os.environ.get('REDIS_PORT', '6379'))
+_channel_backend = os.environ.get('CHANNEL_LAYER', 'auto').lower()
+_use_redis_channels = _channel_backend == 'redis' or (
+    _channel_backend == 'auto'
+    and _redis_host
+    and (_in_docker or _redis_host in ('localhost', '127.0.0.1'))
 )
+
 if _use_redis_channels:
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                'hosts': [(
-                    _redis_host,
-                    int(os.environ.get('REDIS_PORT', '6379')),
-                )],
+                # URL string + explicit timeouts — tuple hosts break on newer redis-py.
+                'hosts': [{
+                    'address': f'redis://{_redis_host}:{_redis_port}/0',
+                    'socket_connect_timeout': 10,
+                    'socket_timeout': 30,
+                    'retry_on_timeout': True,
+                    'health_check_interval': 30,
+                }],
             },
         },
     }
