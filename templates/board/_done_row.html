@@ -1,0 +1,40 @@
+<div class="done-row" data-task-id="{{ task.id }}">
+
+  <div class="done-check">
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+
+  <div class="done-row-body">
+    <div class="done-title">{{ task.title }}</div>
+    <div class="done-meta">
+      <span class="done-priority done-priority--{{ task.priority }}">
+        {{ task.get_priority_display }}
+      </span>
+      {% if task.created_by %}
+      <span class="done-meta-sep">·</span>
+      <span>by
+        {% if task.created_by.profile %}{{ task.created_by.profile.display_name }}{% else %}{{ task.created_by.get_full_name|default:task.created_by.username }}{% endif %}
+      </span>
+      {% endif %}
+      {% if task.assigned_to %}
+      <span class="done-meta-sep">→</span>
+      <span>
+        {% if task.assigned_to.profile %}{{ task.assigned_to.profile.display_name }}{% else %}{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}{% endif %}
+      </span>
+      {% endif %}
+    </div>
+    {% if task.completion_remarks %}
+    <p class="done-remarks">{{ task.completion_remarks }}</p>
+    {% endif %}
+  </div>
+
+  <div class="done-completed-at">
+    {% if task.completed_at %}
+      {{ task.completed_at|date:"M j, Y" }}
+    {% endif %}
+  </div>
+
+</div>

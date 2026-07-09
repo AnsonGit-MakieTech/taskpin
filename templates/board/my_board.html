@@ -17,51 +17,50 @@
       <h1 class="myboard-heading">My Board</h1>
       <p class="myboard-sub">Tasks assigned to you</p>
     </div>
-    {% if task_count %}
-    <div class="task-count-pill">
+    <div class="task-count-pill" id="myboard-count-pill"{% if not task_count %} hidden{% endif %}>
       <span class="task-count-pill-dot"></span>
-      {{ task_count }} active task{{ task_count|pluralize }}
+      <span id="myboard-count-text">{{ task_count }} active task{{ task_count|pluralize }}</span>
     </div>
-    {% endif %}
   </div>
 
-  {% if task_count %}
+  <div id="myboard-deadline-banner" class="deadline-banner" hidden aria-live="polite"></div>
+
+  <div id="myboard-tasks" class="myboard-tasks"{% if not task_count %} hidden{% endif %}>
     {% for group in groups %}
-      {% if group.tasks %}
-      <div class="priority-group">
-        <div class="priority-group-label">
-          <span class="priority-dot priority-dot--{{ group.key }}"></span>
-          {{ group.label }}
-        </div>
+    <div class="priority-group" data-priority="{{ group.key }}"{% if not group.tasks %} hidden{% endif %}>
+      <div class="priority-group-label">
+        <span class="priority-dot priority-dot--{{ group.key }}"></span>
+        {{ group.label }}
+      </div>
+      <div class="priority-group-cards">
         {% for task in group.tasks %}
           {% include 'board/_task_card.html' with task=task %}
         {% endfor %}
       </div>
-      {% endif %}
-    {% endfor %}
-
-  {% else %}
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </div>
-      <p class="empty-state-title">You have no active tasks</p>
-      <p class="empty-state-hint">
-        You're all clear. Ask a teammate to assign<br>you a task, or create one yourself.
-      </p>
-      <a href="{% url 'task_create' %}" class="empty-state-action">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Create a Note
-      </a>
     </div>
-  {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="empty-state" id="myboard-empty"{% if task_count %} hidden{% endif %}>
+    <div class="empty-state-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <p class="empty-state-title">You have no active tasks</p>
+    <p class="empty-state-hint">
+      You're all clear. Ask a teammate to assign<br>you a task, or create one yourself.
+    </p>
+    <a href="{% url 'task_create' %}" class="empty-state-action">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Create a Note
+    </a>
+  </div>
 
 </div>
 {% endblock %}

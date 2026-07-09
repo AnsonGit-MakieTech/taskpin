@@ -162,8 +162,81 @@
     }
   }
 
+  function removeTaskCard(taskId) {
+    const card = document.querySelector('.task-card[data-task-id="' + taskId + '"]');
+    if (!card) {
+      return;
+    }
+    const menu = document.getElementById('menu-' + taskId);
+    if (menu) {
+      menu.remove();
+    }
+    const store = card.closest('.task-store');
+    card.remove();
+    if (store) {
+      ensureEmptyState(store);
+    }
+    updateAllTileCounts();
+    if (activeStore === store) {
+      refreshPanelMeta();
+    }
+  }
+
+  function syncTaskCard(taskId, html, data) {
+    removeTaskCard(taskId);
+
+    if (!html || data.status === 'done') {
+      if (data.previous_assigned_to_id !== undefined) {
+        const prevStore = findStoreByUserId(data.previous_assigned_to_id || '');
+        if (prevStore) {
+          ensureEmptyState(prevStore);
+          updateAllTileCounts();
+        }
+      }
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    const card = wrapper.firstElementChild;
+    if (!card) {
+      return;
+    }
+
+    const targetStore = findStoreByUserId(data.assigned_to_id || '');
+    if (!targetStore) {
+      return;
+    }
+
+    targetStore.appendChild(card);
+
+    if (data.previous_assigned_to_id !== undefined) {
+      const prevStore = findStoreByUserId(data.previous_assigned_to_id || '');
+      if (prevStore && prevStore !== targetStore) {
+        ensureEmptyState(prevStore);
+      }
+    }
+
+    ensureEmptyState(targetStore);
+    updateAllTileCounts();
+
+    if (activeStore === targetStore) {
+      refreshPanelMeta();
+    }
+
+    moveDropdownsToBody(activeStore === targetStore ? panelBody : storesRoot);
+    if (window.TaskPinBoard && window.TaskPinBoard.initCardMenus) {
+      window.TaskPinBoard.initCardMenus(card);
+    }
+    if (window.TaskPinBoard && window.TaskPinBoard.refreshDraggability) {
+      window.TaskPinBoard.refreshDraggability();
+    }
+  }
+
   window.TaskPinTeamBoard = {
     onTaskMoved: onTaskMoved,
+    syncTaskCard: syncTaskCard,
+    removeTaskCard: removeTaskCard,
     suppressTileClick: function () {
       return Date.now() < suppressTileClickUntil;
     },

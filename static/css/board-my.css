@@ -72,6 +72,14 @@
 .priority-dot--important { background: var(--orange); }
 .priority-dot--normal    { background: var(--yellow); border: 1px solid #D4A820; }
 
+.priority-group-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.myboard-tasks { margin-top: 4px; }
+
 .empty-state {
   display: flex;
   flex-direction: column;

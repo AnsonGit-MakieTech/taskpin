@@ -245,3 +245,21 @@
 - [x] Connect realtime notifications on all authenticated pages (not only board pages)
 - [x] Skip notification when the assignee performed the action themselves
 
+---
+
+## Task 22 — Live Board Sync & Due Date Reminders
+
+### Realtime without full page reload
+- [x] Add task card and done-row HTML fragment endpoints for incremental DOM updates
+- [x] Enrich WebSocket payloads with `previous_assigned_to_id`, `status`, and `priority`
+- [x] `board-sync.js` updates Team Board, My Board, and Done pages in place (no reload)
+- [x] Team board sync integrates with member grid counts and open task panel
+- [x] Brief “Board updated” toast when another user changes tasks
+
+### Due date reminders
+- [x] API endpoint for current user’s overdue / due today / due within 24h tasks
+- [x] In-app toast alerts when a deadline threshold is reached
+- [x] Browser notifications when permission is granted (after first click)
+- [x] Persistent banner on My Board showing the most urgent deadline
+- [x] Remind once per task per urgency level per browser session
+

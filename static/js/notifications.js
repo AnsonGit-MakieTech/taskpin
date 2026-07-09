@@ -90,9 +90,7 @@
 
   function notifyAssignment(data) {
     updateTabTitle();
-    return playNotificationSound().finally(function () {
-      document.dispatchEvent(new CustomEvent('taskpin:assignment-sound-done', { detail: data }));
-    });
+    return playNotificationSound();
   }
 
   window.TaskPinNotify = {

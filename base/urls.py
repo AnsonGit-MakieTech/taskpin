@@ -28,6 +28,9 @@ urlpatterns = [
     path('task/<int:task_id>/reassign/', views.task_reassign, name='task_reassign'),
     path('task/<int:task_id>/edit/', views.task_edit, name='task_edit'),
     path('task/<int:task_id>/delete/', views.task_delete, name='task_delete'),
+    path('task/<int:task_id>/card/', views.task_card_fragment, name='task_card_fragment'),
+    path('task/<int:task_id>/done-row/', views.task_done_row_fragment, name='task_done_row_fragment'),
+    path('api/my/deadline-reminders/', views.deadline_reminders, name='deadline_reminders'),
     path('team/', views.team_list, name='team_list'),
     path('team/invite/', views.invite_member, name='invite_member'),
 ]

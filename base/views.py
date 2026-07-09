@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.db.models import Case, When, IntegerField, Count, Q
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
@@ -31,6 +31,24 @@ PRIORITY_ORDER = Case(
     When(priority=Task.PRIORITY_NORMAL, then=2),
     output_field=IntegerField(),
 )
+
+
+def _active_users():
+    return list(
+        User.objects
+        .filter(is_active=True)
+        .select_related('profile')
+        .order_by('first_name', 'username')
+    )
+
+
+def _task_event_extra(task, previous_assigned_to_id=None):
+    return {
+        'assigned_to_id': task.assigned_to_id,
+        'previous_assigned_to_id': previous_assigned_to_id,
+        'status': task.status,
+        'priority': task.priority,
+    }
 
 
 @login_required
@@ -86,9 +104,7 @@ def task_create(request):
             + (f' and assigned to {assigned_to.get_full_name() or assigned_to.username}' if assigned_to else ''),
             task=task,
         )
-        notify_board_update('task.created', task.id, request.user.id, {
-            'assigned_to_id': task.assigned_to_id,
-        })
+        notify_board_update('task.created', task.id, request.user.id, _task_event_extra(task))
         return redirect('team_board')
 
     users = (
@@ -158,9 +174,12 @@ def mark_done(request, task_id):
             action=action,
             task=task,
         )
-        notify_board_update('task.done', task.id, request.user.id, {
-            'assigned_to_id': task.assigned_to_id,
-        })
+        notify_board_update(
+            'task.done',
+            task.id,
+            request.user.id,
+            _task_event_extra(task, previous_assigned_to_id=task.assigned_to_id),
+        )
     return redirect('team_board')
 
 
@@ -170,6 +189,7 @@ def task_reassign(request, task_id):
         return HttpResponseForbidden('Only admins can move tasks.')
     task = get_object_or_404(Task, pk=task_id)
     if request.method == 'POST':
+        previous_assigned_to_id = task.assigned_to_id
         new_user_id = request.POST.get('assigned_to')
         if new_user_id:
             new_user = get_object_or_404(User, pk=new_user_id)
@@ -184,9 +204,12 @@ def task_reassign(request, task_id):
                 action=f'Moved "{task.title}" from {old_name} to {new_name}',
                 task=task,
             )
-            notify_board_update('task.moved', task.id, request.user.id, {
-                'assigned_to_id': task.assigned_to_id,
-            })
+            notify_board_update(
+                'task.moved',
+                task.id,
+                request.user.id,
+                _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+            )
         else:
             task.assigned_to = None
             task.status = Task.STATUS_UNASSIGNED
@@ -196,9 +219,12 @@ def task_reassign(request, task_id):
                 action=f'Unassigned "{task.title}"',
                 task=task,
             )
-            notify_board_update('task.moved', task.id, request.user.id, {
-                'assigned_to_id': None,
-            })
+            notify_board_update(
+                'task.moved',
+                task.id,
+                request.user.id,
+                _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+            )
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'ok': True,
@@ -216,6 +242,7 @@ def task_edit(request, task_id):
     form = TaskCreateForm(request.POST or None, instance=task)
 
     if request.method == 'POST' and form.is_valid():
+        previous_assigned_to_id = task.assigned_to_id
         task = form.save(commit=False)
         assigned_to = form.cleaned_data.get('assign_to')
         if assigned_to:
@@ -230,9 +257,12 @@ def task_edit(request, task_id):
             action=f'Edited task "{task.title}"',
             task=task,
         )
-        notify_board_update('task.edited', task.id, request.user.id, {
-            'assigned_to_id': task.assigned_to_id,
-        })
+        notify_board_update(
+            'task.edited',
+            task.id,
+            request.user.id,
+            _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+        )
         return redirect('team_board')
 
     users = (
@@ -269,6 +299,9 @@ def task_delete(request, task_id):
         task.delete()
         notify_board_update('task.deleted', task_id, request.user.id, {
             'assigned_to_id': assigned_to_id,
+            'previous_assigned_to_id': assigned_to_id,
+            'status': 'deleted',
+            'priority': None,
         })
     return redirect('team_board')
 
@@ -371,3 +404,58 @@ def register(request):
         return redirect('team_board')
 
     return render(request, 'registration/register.html', {'form': form})
+
+
+@login_required
+def task_card_fragment(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    if task.status != Task.STATUS_ASSIGNED and task.status != Task.STATUS_UNASSIGNED:
+        return HttpResponse(status=404)
+    html = render(request, 'board/_task_card.html', {
+        'task': task,
+        'all_users': _active_users(),
+    }).content.decode('utf-8')
+    return HttpResponse(html)
+
+
+@login_required
+def task_done_row_fragment(request, task_id):
+    task = get_object_or_404(
+        Task.objects.select_related(
+            'created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile',
+        ),
+        pk=task_id,
+    )
+    if task.status != Task.STATUS_DONE:
+        return HttpResponse(status=404)
+    html = render(request, 'board/_done_row.html', {'task': task}).content.decode('utf-8')
+    return HttpResponse(html)
+
+
+DEADLINE_LABELS = {
+    'overdue': 'Overdue',
+    'due_today': 'Due today',
+    'due_soon': 'Due within 24 hours',
+}
+
+
+@login_required
+def deadline_reminders(request):
+    tasks = (
+        Task.objects
+        .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED, due_date__isnull=False)
+        .order_by('due_date')
+    )
+    reminders = []
+    for task in tasks:
+        urgency = task.deadline_urgency
+        if not urgency:
+            continue
+        reminders.append({
+            'task_id': task.id,
+            'title': task.title,
+            'urgency': urgency,
+            'label': DEADLINE_LABELS[urgency],
+            'due_date': timezone.localtime(task.due_date).strftime('%b %d, %I:%M %p'),
+        })
+    return JsonResponse({'reminders': reminders})

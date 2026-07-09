@@ -1,14 +1,11 @@
 /**
- * TaskPin — WebSocket connection and board reload on remote updates.
- * Connects for all authenticated users; reloads only on board pages.
+ * TaskPin — WebSocket connection; board pages sync via board-sync.js (no reload).
  */
 (function () {
-  const REALTIME_PAGE = document.body.dataset.realtimePage;
   if (document.body.dataset.userAuth !== 'true') {
     return;
   }
 
-  let reloadTimer = null;
   let socket = null;
   let reconnectTimer = null;
   let reconnectDelay = 1000;
@@ -86,74 +83,6 @@
     }
     connect();
   }
-
-  function showRealtimeToast(message) {
-    let toast = document.getElementById('realtime-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'realtime-toast';
-      toast.className = 'realtime-toast';
-      document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    toast.classList.add('realtime-toast--visible');
-  }
-
-  function scheduleReload(delayMs) {
-    if (reloadTimer) {
-      clearTimeout(reloadTimer);
-    }
-    intentionallyClosing = true;
-    reloadTimer = setTimeout(function () {
-      window.location.reload();
-    }, delayMs);
-  }
-
-  document.addEventListener('taskpin:board-update', function (e) {
-    const data = e.detail;
-    if (!data || data.type === 'connection.established') {
-      return;
-    }
-
-    if (!REALTIME_PAGE) {
-      return;
-    }
-
-    const currentUserId = document.body.dataset.userId;
-    if (currentUserId && data.actor_id && String(data.actor_id) === String(currentUserId)) {
-      return;
-    }
-
-    const notify = window.TaskPinNotify;
-    const assignmentForMe = notify && notify.isAssignmentForMe(data);
-
-    if (assignmentForMe) {
-      showRealtimeToast('New task assigned — refreshing…');
-
-      let reloaded = false;
-      function reloadOnce() {
-        if (reloaded) {
-          return;
-        }
-        reloaded = true;
-        scheduleReload(300);
-      }
-
-      document.addEventListener('taskpin:assignment-sound-done', function onSoundDone() {
-        document.removeEventListener('taskpin:assignment-sound-done', onSoundDone);
-        reloadOnce();
-      });
-
-      if (reloadTimer) {
-        clearTimeout(reloadTimer);
-      }
-      reloadTimer = setTimeout(reloadOnce, 4500);
-      return;
-    }
-
-    showRealtimeToast('Board updated — refreshing…');
-    scheduleReload(400);
-  });
 
   window.addEventListener('beforeunload', function () {
     intentionallyClosing = true;

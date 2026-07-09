@@ -21,9 +21,18 @@
 
   window.TaskPinBoard = {
     refreshDraggability: refreshDraggability,
+    initCardMenus: function (root) {
+      const scope = root || document;
+      scope.querySelectorAll('.card-menu-dropdown').forEach(function (el) {
+        document.body.appendChild(el);
+      });
+    },
   };
 
-  document.addEventListener('DOMContentLoaded', refreshDraggability);
+  document.addEventListener('DOMContentLoaded', function () {
+    refreshDraggability();
+    window.TaskPinBoard.initCardMenus();
+  });
 
   /* ─────────────────────────────────────────────
      0. CONFIRM MODAL
@@ -138,11 +147,6 @@
      Move every .card-menu-dropdown to <body> so
      it is never trapped inside a transformed parent.
   ───────────────────────────────────────────── */
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.card-menu-dropdown').forEach(function (el) {
-      document.body.appendChild(el);
-    });
-  });
 
   window.toggleMenu = function (id, trigger) {
     const dropdown = document.getElementById('menu-' + id);
