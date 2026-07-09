@@ -12,9 +12,9 @@ class BoardConsumer(AsyncWebsocketConsumer):
     GROUP_NAME = 'board'
 
     async def connect(self):
-        if self.scope['user'].is_anonymous:
-            await self.close()
-            return
+        # if self.scope['user'].is_anonymous:
+        #     await self.close()
+        #     return
 
         try:
             await self.channel_layer.group_add(self.GROUP_NAME, self.channel_name)
