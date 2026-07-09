@@ -25,6 +25,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -33,10 +34,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   web:
     build: .
     command: daphne -b 0.0.0.0 -p 8000 taskpin.asgi:application
+    restart: unless-stopped
     volumes:
       - .:/app
     ports:

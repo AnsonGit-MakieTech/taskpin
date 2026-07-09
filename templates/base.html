@@ -13,7 +13,7 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}"
-      {% if request.user.is_authenticated %}data-user-id="{{ request.user.id }}" data-user-auth="true"{% endif %}
+      {% if request.user.is_authenticated %}data-user-id="{{ request.user.id }}" data-user-auth="true" data-notification-sound="{% static 'assets/notification.mp3' %}"{% endif %}
       {% block body_attrs %}{% endblock %}>
 <div class="layout">
 
@@ -164,6 +164,9 @@
 {% block extra_js %}{% endblock %}
 <script src="{% static 'js/app.js' %}"></script>
 <script src="{% static 'js/mobile.js' %}"></script>
-{% block realtime_js %}{% endblock %}
+{% if request.user.is_authenticated %}
+<script src="{% static 'js/notifications.js' %}"></script>
+<script src="{% static 'js/realtime.js' %}"></script>
+{% endif %}
 </body>
 </html>

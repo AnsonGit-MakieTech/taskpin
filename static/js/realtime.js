@@ -1,10 +1,10 @@
 /**
  * TaskPin — WebSocket connection and board reload on remote updates.
- * Only runs on board pages (Team, My, Done) that set data-realtime-page.
+ * Connects for all authenticated users; reloads only on board pages.
  */
 (function () {
   const REALTIME_PAGE = document.body.dataset.realtimePage;
-  if (!REALTIME_PAGE || document.body.dataset.userAuth !== 'true') {
+  if (document.body.dataset.userAuth !== 'true') {
     return;
   }
 
@@ -99,9 +99,23 @@
     toast.classList.add('realtime-toast--visible');
   }
 
+  function scheduleReload(delayMs) {
+    if (reloadTimer) {
+      clearTimeout(reloadTimer);
+    }
+    intentionallyClosing = true;
+    reloadTimer = setTimeout(function () {
+      window.location.reload();
+    }, delayMs);
+  }
+
   document.addEventListener('taskpin:board-update', function (e) {
     const data = e.detail;
     if (!data || data.type === 'connection.established') {
+      return;
+    }
+
+    if (!REALTIME_PAGE) {
       return;
     }
 
@@ -110,15 +124,35 @@
       return;
     }
 
-    showRealtimeToast('Board updated — refreshing…');
+    const notify = window.TaskPinNotify;
+    const assignmentForMe = notify && notify.isAssignmentForMe(data);
 
-    if (reloadTimer) {
-      clearTimeout(reloadTimer);
+    if (assignmentForMe) {
+      showRealtimeToast('New task assigned — refreshing…');
+
+      let reloaded = false;
+      function reloadOnce() {
+        if (reloaded) {
+          return;
+        }
+        reloaded = true;
+        scheduleReload(300);
+      }
+
+      document.addEventListener('taskpin:assignment-sound-done', function onSoundDone() {
+        document.removeEventListener('taskpin:assignment-sound-done', onSoundDone);
+        reloadOnce();
+      });
+
+      if (reloadTimer) {
+        clearTimeout(reloadTimer);
+      }
+      reloadTimer = setTimeout(reloadOnce, 4500);
+      return;
     }
-    intentionallyClosing = true;
-    reloadTimer = setTimeout(function () {
-      window.location.reload();
-    }, 400);
+
+    showRealtimeToast('Board updated — refreshing…');
+    scheduleReload(400);
   });
 
   window.addEventListener('beforeunload', function () {

@@ -235,4 +235,13 @@
 - [x] Highlight drop targets while dragging (admin only, desktop)
 - [x] Keep **Move** dropdown on mobile when drag-and-drop is disabled
 
+---
+
+## Task 21 — Assignment Notifications
+
+- [x] When a task is assigned to a member (drag-and-drop, Move menu, or create with assignee), notify the assignee in real time via WebSocket
+- [x] Play `static/assets/notification.mp3` in the assignee's browser when they receive a new assignment
+- [x] Update the assignee's browser tab title to indicate a new task was assigned to them
+- [x] Connect realtime notifications on all authenticated pages (not only board pages)
+- [x] Skip notification when the assignee performed the action themselves
 
