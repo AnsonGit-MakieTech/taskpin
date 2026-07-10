@@ -1,12 +1,21 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
+from . import message_views
 
 urlpatterns = [
     path('', views.team_board, name='team_board'),
     path('my/', views.my_board, name='my_board'),
     path('done/', views.done_tasks, name='done_tasks'),
     path('activity/', views.activity_log, name='activity_log'),
+    path('messages/', message_views.messages_inbox, name='messages_inbox'),
+    path('messages/<int:conversation_id>/', message_views.messages_inbox, name='messages_conversation'),
+    path('messages/start/<int:user_id>/', message_views.message_start_direct, name='message_start_direct'),
+    path('messages/send/', message_views.message_send, name='message_send'),
+    path('messages/mark-read/', message_views.message_mark_read, name='message_mark_read'),
+    path('messages/<int:conversation_id>/history/', message_views.message_history, name='message_history'),
+    path('messages/bubble/<int:message_id>/', message_views.message_bubble_fragment, name='message_bubble_fragment'),
+    path('api/messages/unread-count/', message_views.unread_count_api, name='messages_unread_count'),
     path('settings/', views.user_settings, name='user_settings'),
     path(
         'settings/password/',

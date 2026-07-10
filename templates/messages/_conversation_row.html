@@ -1,0 +1,36 @@
+<a href="{% url 'messages_conversation' entry.conversation.pk %}"
+   class="msg-convo-row {% if entry.is_team %}msg-convo-row--team{% endif %} {% if active_conversation and active_conversation.pk == entry.conversation.pk %}msg-convo-row--active{% endif %}"
+   data-conversation-id="{{ entry.conversation.pk }}">
+  <div class="msg-convo-avatar {% if entry.avatar.is_team %}msg-convo-avatar--team{% endif %}"
+       {% if not entry.avatar.is_team %}style="background: {{ entry.avatar.color }};"{% endif %}>
+    {% if entry.avatar.is_team %}
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    {% else %}
+    {{ entry.avatar.initials }}
+    {% endif %}
+  </div>
+  <div class="msg-convo-meta">
+    <div class="msg-convo-top">
+      <span class="msg-convo-name">{{ entry.title }}</span>
+      {% if entry.last_message %}
+      <time class="msg-convo-time">{{ entry.last_message.created_at|date:"g:i A" }}</time>
+      {% endif %}
+    </div>
+    <div class="msg-convo-preview">
+      {% if entry.last_message %}
+        {% if entry.last_message.sender_id == request.user.id %}You: {% endif %}{{ entry.last_message.preview }}
+      {% else %}
+        <span class="msg-convo-empty-preview">No messages yet</span>
+      {% endif %}
+    </div>
+  </div>
+  {% if entry.unread_count %}
+  <span class="msg-convo-unread">{{ entry.unread_count }}</span>
+  {% endif %}
+</a>

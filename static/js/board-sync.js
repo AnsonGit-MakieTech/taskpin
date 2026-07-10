@@ -261,9 +261,16 @@
     });
   }
 
+  function isBoardTaskEvent(data) {
+    return Boolean(data && data.task_id && data.action && data.action.indexOf('task.') === 0);
+  }
+
   document.addEventListener('taskpin:board-update', function (e) {
     const data = e.detail;
     if (!data || data.type === 'connection.established') {
+      return;
+    }
+    if (!isBoardTaskEvent(data)) {
       return;
     }
 

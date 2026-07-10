@@ -133,3 +133,81 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f'{self.actor} — {self.action} ({self.timestamp:%Y-%m-%d %H:%M})'
+
+
+class Conversation(models.Model):
+    TYPE_TEAM = 'team'
+    TYPE_DIRECT = 'direct'
+    TYPE_CHOICES = [
+        (TYPE_TEAM, 'Team'),
+        (TYPE_DIRECT, 'Direct'),
+    ]
+
+    conversation_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    user_a = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name='+',
+    )
+    user_b = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['conversation_type'],
+                condition=models.Q(conversation_type='team'),
+                name='unique_team_conversation',
+            ),
+            models.UniqueConstraint(
+                fields=['user_a', 'user_b'],
+                condition=models.Q(conversation_type='direct'),
+                name='unique_direct_conversation',
+            ),
+        ]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        if self.conversation_type == self.TYPE_TEAM:
+            return 'Team chat'
+        return f'Direct ({self.user_a_id}, {self.user_b_id})'
+
+
+class ConversationParticipant(models.Model):
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name='participants',
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversation_participants')
+    last_read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [['conversation', 'user']]
+
+    def __str__(self):
+        return f'{self.user_id} in {self.conversation_id}'
+
+
+class Message(models.Model):
+    MAX_BODY_LENGTH = 2000
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name='messages',
+    )
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    body = models.TextField(max_length=MAX_BODY_LENGTH)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        preview = self.body[:40] + ('…' if len(self.body) > 40 else '')
+        return f'{self.sender_id}: {preview}'
+
+    @property
+    def preview(self):
+        text = self.body.replace('\n', ' ').strip()
+        if len(text) > 80:
+            return text[:77] + '…'
+        return text

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/messages.css' %}">
+{% endblock %}
+
+{% block body_attrs %}data-messages-page="inbox"{% if active_conversation %} data-active-conversation-id="{{ active_conversation.pk }}" data-active-conversation-type="{{ active_conversation.conversation_type }}"{% endif %}{% endblock %}
+
+{% block content %}
+<div class="messages-page {% if active_conversation and request.resolver_match.url_name == 'messages_conversation' %}messages-page--thread-open{% endif %}">
+
+  <aside class="messages-sidebar" id="messages-sidebar">
+    <header class="messages-sidebar-header">
+      <div>
+        <h1 class="messages-heading">Messages</h1>
+        <p class="messages-sub">Chat with your team</p>
+      </div>
+      <div class="messages-new-wrap">
+        <button type="button" class="messages-new-btn" id="messages-new-btn" aria-expanded="false" aria-controls="messages-new-menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New
+        </button>
+        <div class="messages-new-menu" id="messages-new-menu" hidden>
+          <p class="messages-new-menu-title">Message a teammate</p>
+          {% for teammate in teammates %}
+          <a href="{% url 'message_start_direct' teammate.pk %}" class="messages-new-menu-item">
+            <span class="messages-new-avatar" style="background: {% if teammate.profile %}{{ teammate.profile.avatar_color }}{% else %}#64B5F6{% endif %};">
+              {% if teammate.profile %}{{ teammate.profile.initials }}{% else %}{{ teammate.username|slice:":2"|upper }}{% endif %}
+            </span>
+            {% if teammate.profile %}{{ teammate.profile.display_name }}{% else %}{{ teammate.get_full_name|default:teammate.username }}{% endif %}
+          </a>
+          {% empty %}
+          <p class="messages-new-menu-empty">No teammates available</p>
+          {% endfor %}
+        </div>
+      </div>
+    </header>
+
+    <div class="messages-convo-list" id="messages-convo-list">
+      {% for entry in inbox_entries %}
+        {% include 'messages/_conversation_row.html' with entry=entry active_conversation=active_conversation %}
+      {% empty %}
+      <div class="messages-list-empty">
+        <p>No conversations yet</p>
+        <p class="messages-list-empty-hint">Say hello to a teammate</p>
+      </div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="messages-thread" id="messages-thread">
+    {% if active_conversation %}
+    <header class="messages-thread-header">
+      <a href="{% url 'messages_inbox' %}" class="messages-back-btn" id="messages-back-btn" aria-label="Back to inbox">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="messages-thread-title-wrap">
+        <div class="msg-convo-avatar {% if active_avatar.is_team %}msg-convo-avatar--team{% endif %}"
+             {% if not active_avatar.is_team %}style="background: {{ active_avatar.color }};"{% endif %}>
+          {% if active_avatar.is_team %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          {% else %}
+          {{ active_avatar.initials }}
+          {% endif %}
+        </div>
+        <div>
+          <h2 class="messages-thread-title">{{ active_title }}</h2>
+          {% if is_team_chat %}
+          <p class="messages-thread-sub">Everyone on the team can see this chat</p>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class="messages-thread-scroll" id="messages-thread-scroll">
+      {% if page_obj and page_obj.has_next %}
+      <button type="button" class="messages-load-older" id="messages-load-older"
+              data-conversation-id="{{ active_conversation.pk }}"
+              data-before="{{ thread_messages.0.id }}">
+        Load older messages
+      </button>
+      {% endif %}
+      <div class="messages-thread-list" id="messages-thread-list">
+        {% if not thread_messages %}
+        <div class="messages-thread-empty" id="messages-thread-empty">
+          {% if is_team_chat %}
+          <p class="messages-thread-empty-title">Start the conversation for your team</p>
+          <p class="messages-thread-empty-hint">Share updates, questions, or quick notes here.</p>
+          {% else %}
+          <p class="messages-thread-empty-title">Say hello</p>
+          <p class="messages-thread-empty-hint">Send a message to start this conversation.</p>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% for message in thread_messages %}
+          {% ifchanged message.created_at|date:"Y-m-d" %}
+          <div class="msg-day-separator"><span>{{ message.created_at|date:"F j, Y" }}</span></div>
+          {% endifchanged %}
+          {% include 'messages/_message_bubble.html' with message=message show_sender=is_team_chat %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <footer class="messages-compose">
+      <form id="messages-compose-form" class="messages-compose-form" autocomplete="off">
+        {% csrf_token %}
+        <input type="hidden" name="conversation_id" value="{{ active_conversation.pk }}">
+        <textarea name="body" id="messages-compose-input" rows="1"
+                  placeholder="Write a message…" maxlength="2000" required></textarea>
+        <button type="submit" class="messages-send-btn">Send</button>
+      </form>
+    </footer>
+
+    {% else %}
+    <div class="messages-thread-placeholder">
+      <div class="messages-thread-placeholder-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <p class="messages-thread-placeholder-title">Select a conversation</p>
+      <p class="messages-thread-placeholder-hint">Pick Team or a teammate from the list, or start a new message.</p>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

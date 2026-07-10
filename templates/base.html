@@ -74,6 +74,15 @@
         </svg>
         Activity
       </a>
+      <a href="{% url 'messages_inbox' %}"
+         class="nav-item nav-item--with-badge {% if request.resolver_match.url_name == 'messages_inbox' or request.resolver_match.url_name == 'messages_conversation' %}active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Messages
+        <span class="nav-unread-badge" id="sidebar-unread-messages"{% if not unread_message_count %} hidden{% endif %}>{{ unread_message_count }}</span>
+      </a>
       <a href="{% url 'team_list' %}"
          class="nav-item {% if request.resolver_match.url_name == 'team_list' or request.resolver_match.url_name == 'invite_member' %}active{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -144,6 +153,33 @@
 
 </div>
 
+{% if request.user.is_authenticated and team_notify_message and team_notify_conversation_id %}
+<div class="team-msg-slide" id="team-msg-slide" hidden
+     data-message-id="{{ team_notify_message.pk }}"
+     data-conversation-id="{{ team_notify_conversation_id }}"
+     role="status"
+     aria-live="polite">
+  <div class="team-msg-slide-icon" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  </div>
+  <div class="team-msg-slide-body">
+    <p class="team-msg-slide-label">New team message</p>
+    <p class="team-msg-slide-text">
+      <strong>{% if team_notify_message.sender.profile %}{{ team_notify_message.sender.profile.display_name }}{% else %}{{ team_notify_message.sender.get_full_name|default:team_notify_message.sender.username }}{% endif %}</strong>
+      {{ team_notify_message.preview }}
+    </p>
+  </div>
+  <a href="{% url 'messages_conversation' team_notify_conversation_id %}" class="team-msg-slide-link">View</a>
+  <button type="button" class="team-msg-slide-dismiss" id="team-msg-slide-dismiss" aria-label="Dismiss">&times;</button>
+</div>
+{% endif %}
+
 <div id="confirm-modal" class="confirm-modal" hidden>
   <div class="confirm-backdrop"></div>
   <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -167,6 +203,7 @@
 {% if request.user.is_authenticated %}
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/realtime.js' %}"></script>
+<script src="{% static 'js/messages.js' %}"></script>
 <script src="{% static 'js/deadline-reminders.js' %}"></script>
 <script src="{% static 'js/board-sync.js' %}"></script>
 {% endif %}

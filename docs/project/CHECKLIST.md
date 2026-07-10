@@ -263,3 +263,60 @@
 - [x] Persistent banner on My Board showing the most urgent deadline
 - [x] Remind once per task per urgency level per browser session
 
+---
+
+## Task 23 — Team Messaging (Messenger-style)
+
+A built-in messaging system so teammates can chat without leaving TaskPin — similar to Messenger, but kept simple and friendly to match the sticky-note board theme. **All members and admins** can send messages, not just admins.
+
+### Data model
+- [x] Add `Conversation` model — types: `team` (one shared team room) and `direct` (1-on-1 between two users); unique pair for direct chats
+- [x] Add `Message` model — fields: `conversation` (FK), `sender` (FK User), `body` (plain text, max ~2000 chars), `created_at`, `read_at` (nullable; for DMs)
+- [x] Add `ConversationParticipant` or track `last_read_at` per user per conversation for unread counts
+- [x] Auto-create the **Team** conversation on first use (every active user is a participant)
+- [x] Get or create a **direct** conversation when a user opens a chat with a teammate
+- [x] Register models in `base/admin.py`
+
+### Messenger UI — inbox & threads
+- [x] Add **Messages** link in sidebar with unread badge when the user has unread messages
+- [x] **Inbox page** (`/messages/`) — two-pane layout on desktop: conversation list (left) + active thread (right)
+- [x] Conversation list shows **Team** at top, then direct chats sorted by most recent message
+- [x] Each row shows avatar/initials, name, last message preview, timestamp, and unread dot
+- [x] **New message** button — pick a teammate to start or open a direct chat
+- [x] **Thread view** — chat bubbles (mine vs theirs), sender name in team chat, timestamps grouped by day
+- [x] Sticky compose bar at bottom: textarea + Send button; Enter to send, Shift+Enter for new line
+- [x] Mobile: inbox list first, tap conversation to open full-screen thread with back button
+
+### Who can message whom
+- [x] Any logged-in **member or admin** can send messages in **Team** chat
+- [x] Any logged-in **member or admin** can start a **direct** chat with any other active teammate
+- [x] Users cannot message themselves; inactive users hidden from picker
+
+### Realtime delivery
+- [x] Broadcast `message.new` over existing WebSocket (`conversation_id`, `message_id`, `sender_id`, preview text)
+- [x] Client appends new messages to open thread instantly without reload (`messages.js`)
+- [x] Update inbox preview and unread counts in realtime
+- [x] Optional: reuse `notification.mp3` + tab title alert for new DMs (skip when user is sender or thread is open)
+- [x] Mark conversation as read when user opens the thread (update `last_read_at`)
+
+### Notifications & badges
+- [x] Sidebar **Messages** link shows total unread count
+- [x] Browser notification for new DM when permission granted and thread is not open
+- [x] In-app toast when a new message arrives on another page (brief: “New message from …”)
+
+### Optional team announcement banner
+- [x] Pin the latest **Team** chat message (or admin-only “announcement”) as a slim banner on all pages — dismissible per session
+- [x] “View in Messages” link on banner opens Team chat
+
+### Activity & safety
+- [x] Log significant events to `ActivityLog` only if needed (e.g. first message of day optional — avoid noise)
+- [x] Plain text only — no HTML; escape on render
+- [x] Validate message length; basic rate limit per user (e.g. max 30 messages/minute)
+- [x] Server-side permission checks: user must be participant of conversation to read/post
+
+### Empty states & polish
+- [x] Inbox empty state: “No conversations yet — say hello to a teammate”
+- [x] Team chat empty state: “Start the conversation for your team”
+- [x] Style messages page to match theme (warm background, rounded bubbles, friendly typography)
+- [x] Paginate or lazy-load older messages when scrolling up in a thread
+

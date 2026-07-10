@@ -11,6 +11,7 @@
   const soundUrl = document.body.dataset.notificationSound;
   const originalTitle = document.title;
   let pendingCount = 0;
+  let pendingMessageCount = 0;
   let audio = null;
 
   if (soundUrl) {
@@ -67,11 +68,20 @@
     document.title = '(' + pendingCount + ') ' + label + ' — ' + originalTitle;
   }
 
+  function updateMessageTabTitle() {
+    pendingMessageCount += 1;
+    const label = pendingMessageCount === 1
+      ? 'New message'
+      : pendingMessageCount + ' new messages';
+    document.title = '(' + pendingMessageCount + ') ' + label + ' — ' + originalTitle;
+  }
+
   function clearTabTitle() {
-    if (pendingCount === 0) {
+    if (pendingCount === 0 && pendingMessageCount === 0) {
       return;
     }
     pendingCount = 0;
+    pendingMessageCount = 0;
     document.title = originalTitle;
   }
 
@@ -93,9 +103,15 @@
     return playNotificationSound();
   }
 
+  function notifyDirectMessage(data) {
+    updateMessageTabTitle();
+    return playNotificationSound();
+  }
+
   window.TaskPinNotify = {
     isAssignmentForMe: isAssignmentForMe,
     notifyAssignment: notifyAssignment,
+    notifyDirectMessage: notifyDirectMessage,
   };
 
   document.addEventListener('taskpin:board-update', function (e) {
