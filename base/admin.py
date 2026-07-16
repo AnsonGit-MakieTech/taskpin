@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     UserProfile, Task, ActivityLog, Conversation, ConversationParticipant, Message,
-    Organization, OrganizationMembership,
+    Organization, OrganizationMembership, MessageAttachment,
 )
 
 
@@ -62,6 +62,13 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ('body', 'sender__username')
     raw_id_fields = ('conversation', 'sender')
 
-    @admin.display(description='Body')
+    @admin.display(description='Preview')
     def preview_body(self, obj):
         return obj.preview
+
+
+@admin.register(MessageAttachment)
+class MessageAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('original_name', 'conversation', 'message', 'uploaded_by', 'size_bytes', 'created_at')
+    search_fields = ('original_name', 'uploaded_by__username')
+    raw_id_fields = ('conversation', 'message', 'uploaded_by')

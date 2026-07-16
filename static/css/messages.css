@@ -420,6 +420,85 @@ body[data-messages-page="inbox"] .main-content > .messages {
   margin-top: 4px;
 }
 
+.msg-bubble-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.msg-bubble-body + .msg-bubble-attachments {
+  margin-top: 8px;
+}
+
+.msg-attachment {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.msg-attachment--image img {
+  display: block;
+  max-width: 240px;
+  max-height: 200px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, .08);
+}
+
+.msg-bubble--mine .msg-attachment--image img {
+  border-color: rgba(255, 255, 255, .25);
+}
+
+.msg-attachment--file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .55);
+  border: 1px solid var(--border);
+  transition: background .12s;
+}
+
+.msg-bubble--mine .msg-attachment--file {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .25);
+  color: #fff;
+}
+
+.msg-bubble--theirs .msg-attachment--file:hover {
+  background: var(--white);
+}
+
+.msg-bubble--mine .msg-attachment--file:hover {
+  background: rgba(255, 255, 255, .24);
+}
+
+.msg-attachment-icon {
+  flex-shrink: 0;
+  opacity: .85;
+}
+
+.msg-attachment-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.msg-attachment-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-attachment-size {
+  font-size: 11px;
+  opacity: .75;
+}
+
 .msg-bubble-time {
   display: block;
   font-size: 10px;
@@ -438,7 +517,83 @@ body[data-messages-page="inbox"] .main-content > .messages {
 .messages-compose-form {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
+}
+
+.messages-attachment-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 10px;
+}
+
+.messages-attachment-queue:not([hidden]) {
+  display: flex;
+}
+
+.messages-attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dark);
+}
+
+.messages-attach-chip--uploading {
+  opacity: .7;
+}
+
+.messages-attach-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.messages-attach-chip-size {
+  font-size: 10px;
+  opacity: .7;
+  flex-shrink: 0;
+}
+
+.messages-attach-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.messages-attach-chip-remove:hover {
+  color: var(--text-dark);
+}
+
+.messages-attach-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.messages-attach-btn:hover {
+  background: var(--bg);
+  color: var(--orange);
+  border-color: #f0e0b8;
 }
 
 .messages-compose-form textarea {

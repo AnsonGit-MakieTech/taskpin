@@ -251,6 +251,133 @@
     const newBtn = document.getElementById('messages-new-btn');
     const newMenu = document.getElementById('messages-new-menu');
     const loadOlderBtn = document.getElementById('messages-load-older');
+    const fileInput = document.getElementById('messages-file-input');
+    const attachBtn = document.getElementById('messages-attach-btn');
+    const attachQueue = document.getElementById('messages-attachment-queue');
+    const pendingAttachments = [];
+
+    function formatSize(bytes) {
+      if (bytes < 1024) {
+        return bytes + ' B';
+      }
+      if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(1) + ' KB';
+      }
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function renderAttachmentQueue() {
+      if (!attachQueue) {
+        return;
+      }
+      if (!pendingAttachments.length) {
+        attachQueue.hidden = true;
+        attachQueue.innerHTML = '';
+        return;
+      }
+      attachQueue.hidden = false;
+      attachQueue.innerHTML = '';
+      pendingAttachments.forEach(function (item, index) {
+        const chip = document.createElement('div');
+        chip.className = 'messages-attach-chip' + (item.uploading ? ' messages-attach-chip--uploading' : '');
+        const label = item.uploading ? 'Uploading…' : item.name;
+        chip.innerHTML =
+          '<span class="messages-attach-chip-name" title="' + label + '">' + label + '</span>' +
+          (item.uploading ? '' : '<span class="messages-attach-chip-size">' + formatSize(item.size) + '</span>') +
+          '<button type="button" class="messages-attach-chip-remove" aria-label="Remove file">&times;</button>';
+        const removeBtn = chip.querySelector('.messages-attach-chip-remove');
+        if (removeBtn && !item.uploading) {
+          removeBtn.addEventListener('click', function () {
+            pendingAttachments.splice(index, 1);
+            renderAttachmentQueue();
+          });
+        }
+        attachQueue.appendChild(chip);
+      });
+    }
+
+    function uploadFiles(fileList) {
+      if (!form || !fileList || !fileList.length) {
+        return Promise.resolve();
+      }
+      const conversationInput = form.querySelector('[name=conversation_id]');
+      if (!conversationInput) {
+        return Promise.resolve();
+      }
+
+      const placeholders = [];
+      for (let i = 0; i < fileList.length; i++) {
+        placeholders.push({
+          uploading: true,
+          name: fileList[i].name,
+          size: fileList[i].size,
+        });
+      }
+      pendingAttachments.push.apply(pendingAttachments, placeholders);
+      renderAttachmentQueue();
+
+      const payload = new FormData();
+      payload.append('conversation_id', conversationInput.value);
+      for (let j = 0; j < fileList.length; j++) {
+        payload.append('files', fileList[j]);
+      }
+
+      return fetch('/messages/upload/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'X-CSRFToken': csrfToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: payload,
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          for (let k = 0; k < placeholders.length; k++) {
+            const idx = pendingAttachments.indexOf(placeholders[k]);
+            if (idx !== -1) {
+              pendingAttachments.splice(idx, 1);
+            }
+          }
+          if (!data.ok) {
+            showToast(data.error || 'Could not upload files');
+            renderAttachmentQueue();
+            return;
+          }
+          (data.attachments || []).forEach(function (attachment) {
+            pendingAttachments.push({
+              id: attachment.id,
+              name: attachment.name,
+              size: attachment.size,
+              uploading: false,
+            });
+          });
+          renderAttachmentQueue();
+        })
+        .catch(function () {
+          placeholders.forEach(function (placeholder) {
+            const idx = pendingAttachments.indexOf(placeholder);
+            if (idx !== -1) {
+              pendingAttachments.splice(idx, 1);
+            }
+          });
+          showToast('Could not upload files');
+          renderAttachmentQueue();
+        });
+    }
+
+    if (attachBtn && fileInput) {
+      attachBtn.addEventListener('click', function () {
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', function () {
+        if (!fileInput.files || !fileInput.files.length) {
+          return;
+        }
+        uploadFiles(fileInput.files);
+        fileInput.value = '';
+      });
+    }
 
     if (input) {
       input.addEventListener('input', function () {
@@ -272,7 +399,15 @@
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         const body = input ? input.value.trim() : '';
-        if (!body) {
+        const readyAttachments = pendingAttachments.filter(function (item) {
+          return item.id && !item.uploading;
+        });
+        if (!body && !readyAttachments.length) {
+          showToast('Enter a message or attach a file');
+          return;
+        }
+        if (pendingAttachments.some(function (item) { return item.uploading; })) {
+          showToast('Please wait for uploads to finish');
           return;
         }
         const sendBtn = form.querySelector('.messages-send-btn');
@@ -282,6 +417,9 @@
 
         const payload = new FormData(form);
         payload.set('body', body);
+        readyAttachments.forEach(function (item) {
+          payload.append('attachment_ids', item.id);
+        });
 
         fetch('/messages/send/', {
           method: 'POST',
@@ -302,6 +440,8 @@
               input.value = '';
               input.style.height = 'auto';
             }
+            pendingAttachments.length = 0;
+            renderAttachmentQueue();
             appendMessageHtml(data.html);
             if (activeConversationId) {
               updateConvoRowPreview(activeConversationId, {

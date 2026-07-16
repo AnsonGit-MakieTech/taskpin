@@ -6,6 +6,13 @@
     {% if message.sender.profile %}{{ message.sender.profile.display_name }}{% else %}{{ message.sender.get_full_name|default:message.sender.username }}{% endif %}
   </div>
   {% endif %}
+  {% if message.body %}
   <div class="msg-bubble-body">{{ message.body|linebreaksbr }}</div>
+  {% endif %}
+  {% if message.attachments.all %}
+  <div class="msg-bubble-attachments">
+    {% include 'messages/_message_attachments.html' with message=message %}
+  </div>
+  {% endif %}
   <time class="msg-bubble-time" datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"g:i A" }}</time>
 </div>

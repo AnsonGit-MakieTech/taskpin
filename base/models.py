@@ -7,6 +7,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .message_attachments import attachment_upload_to
+
 
 class Organization(models.Model):
     name = models.CharField(max_length=200)
@@ -254,19 +256,75 @@ class Message(models.Model):
         Conversation, on_delete=models.CASCADE, related_name='messages',
     )
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    body = models.TextField(max_length=MAX_BODY_LENGTH)
+    body = models.TextField(max_length=MAX_BODY_LENGTH, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['created_at']
 
     def __str__(self):
-        preview = self.body[:40] + ('…' if len(self.body) > 40 else '')
-        return f'{self.sender_id}: {preview}'
+        preview = self.preview
+        return f'{self.sender_id}: {preview[:40]}'
 
     @property
     def preview(self):
-        text = self.body.replace('\n', ' ').strip()
-        if len(text) > 80:
-            return text[:77] + '…'
-        return text
+        body = self.body.replace('\n', ' ').strip()
+        attachments = list(self.attachments.all())
+
+        if body:
+            if len(body) > 80:
+                body = body[:77] + '…'
+            if attachments:
+                count = len(attachments)
+                suffix = f' (+ {count} file{"s" if count != 1 else ""})'
+                combined = body + suffix
+                return combined[:80] + ('…' if len(combined) > 80 else '')
+            return body
+
+        if not attachments:
+            return ''
+
+        if len(attachments) == 1:
+            name = attachments[0].original_name
+            label = f'📎 {name}'
+            return label[:80] + ('…' if len(label) > 80 else '')
+        return f'📎 {len(attachments)} files'
+
+    @property
+    def has_content(self):
+        return bool(self.body.strip()) or self.attachments.exists()
+
+
+class MessageAttachment(models.Model):
+    message = models.ForeignKey(
+        Message, on_delete=models.CASCADE, null=True, blank=True, related_name='attachments',
+    )
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name='pending_attachments',
+    )
+    uploaded_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='message_uploads',
+    )
+    file = models.FileField(upload_to=attachment_upload_to)
+    original_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=127, blank=True)
+    size_bytes = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return self.original_name
+
+    @property
+    def is_image(self):
+        from .message_attachments import is_image_filename
+        return is_image_filename(self.original_name)
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.size_bytes:
+            self.size_bytes = self.file.size
+        if self.file and hasattr(self.file, 'content_type') and self.file.content_type:
+            self.content_type = self.file.content_type
+        super().save(*args, **kwargs)

@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils import timezone
 
-from .models import Conversation, ConversationParticipant, Message
+from .models import Conversation, ConversationParticipant, Message, MessageAttachment
+from .message_attachments import MAX_FILES_PER_MESSAGE
 from .organizations import get_org_members, get_user_organization, users_share_organization
 from .realtime import notify_board_update
 
@@ -234,11 +235,45 @@ def latest_unread_team_message(user):
     return message, conversation
 
 
-def send_message(conversation, sender, body):
-    body = body.strip()
-    if not body:
-        raise ValueError('Message cannot be empty.')
-    if len(body) > Message.MAX_BODY_LENGTH:
+def serialize_attachments(message):
+    return [
+        {
+            'id': attachment.pk,
+            'name': attachment.original_name,
+            'size': attachment.size_bytes,
+            'is_image': attachment.is_image,
+            'url': f'/messages/attachment/{attachment.pk}/',
+        }
+        for attachment in message.attachments.all()
+    ]
+
+
+def _claim_attachments(conversation, sender, attachment_ids):
+    if not attachment_ids:
+        return []
+    if len(attachment_ids) > MAX_FILES_PER_MESSAGE:
+        raise ValueError(f'You can attach up to {MAX_FILES_PER_MESSAGE} files per message.')
+    attachments = list(
+        MessageAttachment.objects.filter(
+            pk__in=attachment_ids,
+            conversation=conversation,
+            uploaded_by=sender,
+            message__isnull=True,
+        )
+    )
+    if len(attachments) != len(set(attachment_ids)):
+        raise ValueError('One or more attachments are invalid or already used.')
+    return attachments
+
+
+def send_message(conversation, sender, body, attachment_ids=None):
+    body = (body or '').strip()
+    attachment_ids = attachment_ids or []
+    attachments = _claim_attachments(conversation, sender, attachment_ids)
+
+    if not body and not attachments:
+        raise ValueError('Enter a message or attach at least one file.')
+    if body and len(body) > Message.MAX_BODY_LENGTH:
         raise ValueError(f'Message cannot exceed {Message.MAX_BODY_LENGTH} characters.')
     if not is_participant(conversation, sender):
         raise PermissionError('You are not a participant in this conversation.')
@@ -250,8 +285,17 @@ def send_message(conversation, sender, body):
         sender=sender,
         body=body,
     )
+    if attachments:
+        MessageAttachment.objects.filter(pk__in=[item.pk for item in attachments]).update(message=message)
+
     Conversation.objects.filter(pk=conversation.pk).update(updated_at=timezone.now())
     mark_conversation_read(conversation, sender)
+
+    message = (
+        Message.objects
+        .prefetch_related('attachments')
+        .get(pk=message.pk)
+    )
 
     other_user_id = None
     if conversation.conversation_type == Conversation.TYPE_DIRECT:
@@ -265,5 +309,25 @@ def send_message(conversation, sender, body):
         'sender_name': user_display_name(sender),
         'preview': message.preview,
         'recipient_user_id': other_user_id,
+        'attachments': serialize_attachments(message),
     }, organization_id=conversation.organization_id)
     return message
+
+
+def create_pending_attachment(conversation, sender, uploaded_file):
+    from .message_attachments import check_upload_rate_limit, validate_upload_file
+
+    if not is_participant(conversation, sender):
+        raise PermissionError('You are not a participant in this conversation.')
+    if not check_upload_rate_limit(sender):
+        raise PermissionError('You are uploading files too quickly. Please wait a moment.')
+    validate_upload_file(uploaded_file)
+
+    return MessageAttachment.objects.create(
+        conversation=conversation,
+        uploaded_by=sender,
+        file=uploaded_file,
+        original_name=uploaded_file.name,
+        content_type=getattr(uploaded_file, 'content_type', '') or '',
+        size_bytes=uploaded_file.size,
+    )
