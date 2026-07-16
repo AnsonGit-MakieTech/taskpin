@@ -1,6 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -11,13 +10,22 @@ from functools import wraps
 
 from .models import Task, ActivityLog, UserProfile
 from .forms import TaskCreateForm, InviteMemberForm, RegisterForm, ProfileSettingsForm
-from .permissions import is_admin, can_manage_task, can_delete_task
+from .permissions import is_admin, can_manage_task, can_delete_task, can_message_user
+from .organizations import (
+    organization_required,
+    get_org_members,
+    get_org_task,
+    tasks_for_organization,
+    activity_logs_for_organization,
+    create_organization_with_admin,
+    add_user_to_organization,
+)
 from .realtime import notify_board_update
 
 
 def admin_required(view_func):
     @wraps(view_func)
-    @login_required
+    @organization_required
     def wrapper(request, *args, **kwargs):
         if not is_admin(request.user):
             return HttpResponseForbidden('Admin access required.')
@@ -33,13 +41,8 @@ PRIORITY_ORDER = Case(
 )
 
 
-def _active_users():
-    return list(
-        User.objects
-        .filter(is_active=True)
-        .select_related('profile')
-        .order_by('first_name', 'username')
-    )
+def _active_users(organization):
+    return list(get_org_members(organization))
 
 
 def _task_event_extra(task, previous_assigned_to_id=None):
@@ -51,17 +54,22 @@ def _task_event_extra(task, previous_assigned_to_id=None):
     }
 
 
-@login_required
-def team_board(request):
-    users = (
-        User.objects
-        .filter(is_active=True)
-        .select_related('profile')
-        .order_by('first_name', 'username')
+def _log_activity(request, action, task):
+    ActivityLog.objects.create(
+        organization=request.organization,
+        actor=request.user,
+        action=action,
+        task=task,
     )
 
+
+@organization_required
+def team_board(request):
+    org = request.organization
+    users = get_org_members(org)
+
     unassigned_tasks = list(
-        Task.objects
+        tasks_for_organization(org)
         .filter(status=Task.STATUS_UNASSIGNED, assigned_to__isnull=True)
         .annotate(priority_order=PRIORITY_ORDER)
         .order_by('priority_order', 'due_date')
@@ -70,7 +78,7 @@ def team_board(request):
     board = []
     for user in users:
         tasks = list(
-            Task.objects
+            tasks_for_organization(org)
             .filter(assigned_to=user, status=Task.STATUS_ASSIGNED)
             .annotate(priority_order=PRIORITY_ORDER)
             .order_by('priority_order', 'due_date')
@@ -85,11 +93,12 @@ def team_board(request):
     })
 
 
-@login_required
+@organization_required
 def task_create(request):
-    form = TaskCreateForm(request.POST or None)
+    form = TaskCreateForm(request.POST or None, organization=request.organization)
     if request.method == 'POST' and form.is_valid():
         task = form.save(commit=False)
+        task.organization = request.organization
         task.created_by = request.user
         assigned_to = form.cleaned_data.get('assign_to')
         if assigned_to:
@@ -98,43 +107,40 @@ def task_create(request):
         else:
             task.status = Task.STATUS_UNASSIGNED
         task.save()
-        ActivityLog.objects.create(
-            actor=request.user,
-            action=f'Created task "{task.title}"'
+        _log_activity(
+            request,
+            f'Created task "{task.title}"'
             + (f' and assigned to {assigned_to.get_full_name() or assigned_to.username}' if assigned_to else ''),
-            task=task,
+            task,
         )
-        notify_board_update('task.created', task.id, request.user.id, _task_event_extra(task))
+        notify_board_update(
+            'task.created', task.id, request.user.id,
+            _task_event_extra(task),
+            organization_id=request.organization.pk,
+        )
         return redirect('team_board')
 
-    users = (
-        User.objects
-        .filter(is_active=True)
-        .select_related('profile')
-        .order_by('first_name', 'username')
-    )
+    users = get_org_members(request.organization)
     return render(request, 'board/task_form.html', {'form': form, 'users': users})
 
 
-@login_required
+@organization_required
 def my_board(request):
     base_qs = (
-        Task.objects
+        tasks_for_organization(request.organization)
         .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED)
         .order_by('due_date', 'created_at')
     )
-    urgent    = list(base_qs.filter(priority=Task.PRIORITY_URGENT))
+    urgent = list(base_qs.filter(priority=Task.PRIORITY_URGENT))
     important = list(base_qs.filter(priority=Task.PRIORITY_IMPORTANT))
-    normal    = list(base_qs.filter(priority=Task.PRIORITY_NORMAL))
+    normal = list(base_qs.filter(priority=Task.PRIORITY_NORMAL))
     all_tasks = urgent + important + normal
     groups = [
-        {'label': 'Urgent',    'key': 'urgent',    'tasks': urgent},
+        {'label': 'Urgent', 'key': 'urgent', 'tasks': urgent},
         {'label': 'Important', 'key': 'important', 'tasks': important},
-        {'label': 'Normal',    'key': 'normal',    'tasks': normal},
+        {'label': 'Normal', 'key': 'normal', 'tasks': normal},
     ]
-    all_users = list(
-        User.objects.filter(is_active=True).select_related('profile').order_by('first_name', 'username')
-    )
+    all_users = list(get_org_members(request.organization))
     return render(request, 'board/my_board.html', {
         'groups': groups,
         'task_count': len(all_tasks),
@@ -142,10 +148,10 @@ def my_board(request):
     })
 
 
-@login_required
+@organization_required
 def done_tasks(request):
     tasks = list(
-        Task.objects
+        tasks_for_organization(request.organization)
         .filter(status=Task.STATUS_DONE)
         .select_related('created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile')
         .order_by('-completed_at')
@@ -153,9 +159,9 @@ def done_tasks(request):
     return render(request, 'board/done_tasks.html', {'tasks': tasks})
 
 
-@login_required
+@organization_required
 def mark_done(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_org_task(request.user, task_id)
     if not can_manage_task(request.user, task):
         return HttpResponseForbidden('You cannot mark this task as done.')
     if request.method == 'POST':
@@ -168,62 +174,57 @@ def mark_done(request, task_id):
         if remarks:
             preview = remarks if len(remarks) <= 120 else remarks[:117] + '…'
             action = f'{action} — {preview}'
-        action = action[:300]
-        ActivityLog.objects.create(
-            actor=request.user,
-            action=action,
-            task=task,
-        )
+        _log_activity(request, action[:300], task)
         notify_board_update(
             'task.done',
             task.id,
             request.user.id,
             _task_event_extra(task, previous_assigned_to_id=task.assigned_to_id),
+            organization_id=task.organization_id,
         )
     return redirect('team_board')
 
 
-@login_required
+@organization_required
 def task_reassign(request, task_id):
     if not is_admin(request.user):
         return HttpResponseForbidden('Only admins can move tasks.')
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_org_task(request.user, task_id)
     if request.method == 'POST':
         previous_assigned_to_id = task.assigned_to_id
         new_user_id = request.POST.get('assigned_to')
         if new_user_id:
-            new_user = get_object_or_404(User, pk=new_user_id)
+            new_user = get_object_or_404(
+                User,
+                pk=new_user_id,
+                organization_membership__organization=request.organization,
+                is_active=True,
+            )
             old_assignee = task.assigned_to
             task.assigned_to = new_user
             task.status = Task.STATUS_ASSIGNED
             task.save()
             old_name = old_assignee.get_full_name() or old_assignee.username if old_assignee else 'Unassigned'
             new_name = new_user.get_full_name() or new_user.username
-            ActivityLog.objects.create(
-                actor=request.user,
-                action=f'Moved "{task.title}" from {old_name} to {new_name}',
-                task=task,
-            )
+            _log_activity(request, f'Moved "{task.title}" from {old_name} to {new_name}', task)
             notify_board_update(
                 'task.moved',
                 task.id,
                 request.user.id,
                 _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+                organization_id=task.organization_id,
             )
         else:
             task.assigned_to = None
             task.status = Task.STATUS_UNASSIGNED
             task.save()
-            ActivityLog.objects.create(
-                actor=request.user,
-                action=f'Unassigned "{task.title}"',
-                task=task,
-            )
+            _log_activity(request, f'Unassigned "{task.title}"', task)
             notify_board_update(
                 'task.moved',
                 task.id,
                 request.user.id,
                 _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+                organization_id=task.organization_id,
             )
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
@@ -234,12 +235,12 @@ def task_reassign(request, task_id):
     return redirect('team_board')
 
 
-@login_required
+@organization_required
 def task_edit(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_org_task(request.user, task_id)
     if not can_manage_task(request.user, task):
         return HttpResponseForbidden('You cannot edit this task.')
-    form = TaskCreateForm(request.POST or None, instance=task)
+    form = TaskCreateForm(request.POST or None, instance=task, organization=request.organization)
 
     if request.method == 'POST' and form.is_valid():
         previous_assigned_to_id = task.assigned_to_id
@@ -252,26 +253,17 @@ def task_edit(request, task_id):
             task.assigned_to = None
             task.status = Task.STATUS_UNASSIGNED
         task.save()
-        ActivityLog.objects.create(
-            actor=request.user,
-            action=f'Edited task "{task.title}"',
-            task=task,
-        )
+        _log_activity(request, f'Edited task "{task.title}"', task)
         notify_board_update(
             'task.edited',
             task.id,
             request.user.id,
             _task_event_extra(task, previous_assigned_to_id=previous_assigned_to_id),
+            organization_id=task.organization_id,
         )
         return redirect('team_board')
 
-    users = (
-        User.objects
-        .filter(is_active=True)
-        .select_related('profile')
-        .order_by('first_name', 'username')
-    )
-    # Pre-select the current assignee in the form
+    users = get_org_members(request.organization)
     if task.assigned_to and not form.is_bound:
         form.initial['assign_to'] = task.assigned_to.pk
 
@@ -282,37 +274,34 @@ def task_edit(request, task_id):
     })
 
 
-@login_required
+@organization_required
 def task_delete(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_org_task(request.user, task_id)
     if not can_delete_task(request.user, task):
         return HttpResponseForbidden('You cannot delete this task.')
     if request.method == 'POST':
         title = task.title
         task_id = task.id
         assigned_to_id = task.assigned_to_id
-        ActivityLog.objects.create(
-            actor=request.user,
-            action=f'Deleted task "{title}"',
-            task=task,
-        )
+        org_id = task.organization_id
+        _log_activity(request, f'Deleted task "{title}"', task)
         task.delete()
         notify_board_update('task.deleted', task_id, request.user.id, {
             'assigned_to_id': assigned_to_id,
             'previous_assigned_to_id': assigned_to_id,
             'status': 'deleted',
             'priority': None,
-        })
+        }, organization_id=org_id)
     return redirect('team_board')
 
 
 ACTIVITY_LOG_PAGE_SIZE = 20
 
 
-@login_required
+@organization_required
 def activity_log(request):
     queryset = (
-        ActivityLog.objects
+        activity_logs_for_organization(request.organization)
         .select_related('actor', 'actor__profile', 'task')
         .order_by('-timestamp')
     )
@@ -324,7 +313,7 @@ def activity_log(request):
     })
 
 
-@login_required
+@organization_required
 def user_settings(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     form = ProfileSettingsForm(
@@ -347,19 +336,20 @@ def user_settings(request):
     })
 
 
-@login_required
+@organization_required
 def team_list(request):
+    org = request.organization
     members = (
-        User.objects
-        .filter(is_active=True)
-        .select_related('profile')
+        get_org_members(org)
         .annotate(
             active_task_count=Count(
                 'assigned_tasks',
-                filter=Q(assigned_tasks__status=Task.STATUS_ASSIGNED),
+                filter=Q(
+                    assigned_tasks__status=Task.STATUS_ASSIGNED,
+                    assigned_tasks__organization=org,
+                ),
             )
         )
-        .order_by('first_name', 'username')
     )
     return render(request, 'team/team_list.html', {
         'members': members,
@@ -377,9 +367,11 @@ def invite_member(request):
             first_name=form.cleaned_data['first_name'],
             last_name=form.cleaned_data['last_name'],
         )
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        profile.role = form.cleaned_data['role']
-        profile.save()
+        add_user_to_organization(
+            request.organization,
+            user,
+            role=form.cleaned_data['role'],
+        )
         return redirect('team_list')
 
     return render(request, 'team/invite_form.html', {'form': form})
@@ -397,35 +389,28 @@ def register(request):
             first_name=form.cleaned_data['first_name'],
             last_name=form.cleaned_data['last_name'],
         )
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        profile.role = 'admin'
-        profile.save()
+        create_organization_with_admin(form.cleaned_data['organization_name'], user)
         login(request, user)
         return redirect('team_board')
 
     return render(request, 'registration/register.html', {'form': form})
 
 
-@login_required
+@organization_required
 def task_card_fragment(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_org_task(request.user, task_id)
     if task.status != Task.STATUS_ASSIGNED and task.status != Task.STATUS_UNASSIGNED:
         return HttpResponse(status=404)
     html = render(request, 'board/_task_card.html', {
         'task': task,
-        'all_users': _active_users(),
+        'all_users': _active_users(request.organization),
     }).content.decode('utf-8')
     return HttpResponse(html)
 
 
-@login_required
+@organization_required
 def task_done_row_fragment(request, task_id):
-    task = get_object_or_404(
-        Task.objects.select_related(
-            'created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile',
-        ),
-        pk=task_id,
-    )
+    task = get_org_task(request.user, task_id)
     if task.status != Task.STATUS_DONE:
         return HttpResponse(status=404)
     html = render(request, 'board/_done_row.html', {'task': task}).content.decode('utf-8')
@@ -439,10 +424,10 @@ DEADLINE_LABELS = {
 }
 
 
-@login_required
+@organization_required
 def deadline_reminders(request):
     tasks = (
-        Task.objects
+        tasks_for_organization(request.organization)
         .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED, due_date__isnull=False)
         .order_by('due_date')
     )

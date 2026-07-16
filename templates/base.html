@@ -13,7 +13,7 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}"
-      {% if request.user.is_authenticated %}data-user-id="{{ request.user.id }}" data-user-auth="true" data-notification-sound="{% static 'assets/notification.mp3' %}"{% endif %}
+      {% if request.user.is_authenticated %}data-user-id="{{ request.user.id }}" data-user-auth="true" data-notification-sound="{% static 'assets/notification.mp3' %}"{% if current_organization %} data-org-id="{{ current_organization.pk }}"{% endif %}{% endif %}
       {% block body_attrs %}{% endblock %}>
 <div class="layout">
 
@@ -35,7 +35,12 @@
           <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
         </svg>
       </span>
-      <span class="brand-name">TaskPin</span>
+      <span class="brand-text">
+        <span class="brand-name">TaskPin</span>
+        {% if current_organization %}
+        <span class="brand-org">{{ current_organization.name }}</span>
+        {% endif %}
+      </span>
     </a>
 
     <nav class="sidebar-nav">

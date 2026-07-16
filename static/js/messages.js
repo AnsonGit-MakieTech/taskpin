@@ -539,6 +539,10 @@
       return;
     }
     if (data.action === 'message.new') {
+      const orgId = document.body.dataset.orgId;
+      if (orgId && data.organization_id && String(data.organization_id) !== String(orgId)) {
+        return;
+      }
       handleMessageNew(data);
     }
   });

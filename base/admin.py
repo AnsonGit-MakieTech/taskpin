@@ -1,5 +1,23 @@
 from django.contrib import admin
-from .models import UserProfile, Task, ActivityLog, Conversation, ConversationParticipant, Message
+from .models import (
+    UserProfile, Task, ActivityLog, Conversation, ConversationParticipant, Message,
+    Organization, OrganizationMembership,
+)
+
+
+@admin.register(Organization)
+class OrganizationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'created_by', 'created_at')
+    search_fields = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+
+
+@admin.register(OrganizationMembership)
+class OrganizationMembershipAdmin(admin.ModelAdmin):
+    list_display = ('user', 'organization', 'role', 'joined_at')
+    list_filter = ('role', 'organization')
+    search_fields = ('user__username', 'organization__name')
+    raw_id_fields = ('user', 'organization')
 
 
 @admin.register(UserProfile)
@@ -11,8 +29,8 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'created_at')
-    list_filter = ('status', 'priority')
+    list_display = ('title', 'organization', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'created_at')
+    list_filter = ('status', 'priority', 'organization')
     search_fields = ('title', 'description')
     date_hierarchy = 'created_at'
     raw_id_fields = ('created_by', 'assigned_to')
@@ -20,16 +38,16 @@ class TaskAdmin(admin.ModelAdmin):
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(admin.ModelAdmin):
-    list_display = ('actor', 'action', 'task', 'timestamp')
-    list_filter = ('timestamp',)
+    list_display = ('actor', 'organization', 'action', 'task', 'timestamp')
+    list_filter = ('timestamp', 'organization')
     search_fields = ('action', 'actor__username', 'task__title')
     readonly_fields = ('actor', 'action', 'task', 'timestamp')
 
 
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'conversation_type', 'user_a', 'user_b', 'updated_at')
-    list_filter = ('conversation_type',)
+    list_display = ('id', 'organization', 'conversation_type', 'user_a', 'user_b', 'updated_at')
+    list_filter = ('conversation_type', 'organization')
 
 
 @admin.register(ConversationParticipant)

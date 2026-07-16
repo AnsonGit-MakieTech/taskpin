@@ -2,10 +2,10 @@
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.db.models import Count, Max, Q
 from django.utils import timezone
 
-from .models import Conversation, ConversationParticipant, Message, UserProfile
+from .models import Conversation, ConversationParticipant, Message
+from .organizations import get_org_members, get_user_organization, users_share_organization
 from .realtime import notify_board_update
 
 MESSAGE_RATE_LIMIT = 30
@@ -26,28 +26,25 @@ def ensure_participant(conversation, user):
     return participant
 
 
-def get_team_conversation():
-    conversation, created = Conversation.objects.get_or_create(
+def get_team_conversation(organization):
+    conversation, _ = Conversation.objects.get_or_create(
         conversation_type=Conversation.TYPE_TEAM,
+        organization=organization,
     )
-    if created:
-        conversation.save()
-    active_users = User.objects.filter(is_active=True)
-    for user in active_users:
+    for user in get_org_members(organization):
         ensure_participant(conversation, user)
     return conversation
 
 
-def sync_team_participants():
-    """Add any active users missing from the team conversation."""
-    conversation = get_team_conversation()
-    active_ids = set(
-        User.objects.filter(is_active=True).values_list('pk', flat=True)
-    )
-    existing_ids = set(
-        conversation.participants.values_list('user_id', flat=True)
-    )
-    for user_id in active_ids - existing_ids:
+def sync_team_participants(user):
+    """Add any organization members missing from the team conversation."""
+    organization = get_user_organization(user)
+    if organization is None:
+        return None
+    conversation = get_team_conversation(organization)
+    member_ids = set(get_org_members(organization).values_list('pk', flat=True))
+    existing_ids = set(conversation.participants.values_list('user_id', flat=True))
+    for user_id in member_ids - existing_ids:
         ensure_participant(conversation, User.objects.get(pk=user_id))
     return conversation
 
@@ -55,12 +52,18 @@ def sync_team_participants():
 def get_or_create_direct_conversation(user, other_user):
     if user.pk == other_user.pk:
         raise ValueError('Cannot create a direct chat with yourself.')
+    if not users_share_organization(user, other_user):
+        raise PermissionError('You can only message members of your organization.')
+    organization = get_user_organization(user)
     user_a, user_b = _ordered_users(user, other_user)
     conversation, created = Conversation.objects.get_or_create(
         conversation_type=Conversation.TYPE_DIRECT,
         user_a=user_a,
         user_b=user_b,
+        defaults={'organization': organization},
     )
+    if conversation.organization_id != organization.pk:
+        raise PermissionError('You cannot access this conversation.')
     ensure_participant(conversation, user_a)
     ensure_participant(conversation, user_b)
     return conversation
@@ -107,11 +110,21 @@ def other_user_in_direct(conversation, viewer):
 
 
 def is_participant(conversation, user):
+    organization = get_user_organization(user)
+    if organization is None or conversation.organization_id != organization.pk:
+        return False
     return conversation.participants.filter(user=user).exists()
 
 
 def unread_count_for_user(user):
-    participants = ConversationParticipant.objects.filter(user=user).select_related('conversation')
+    organization = get_user_organization(user)
+    if organization is None:
+        return 0
+    participants = (
+        ConversationParticipant.objects
+        .filter(user=user, conversation__organization=organization)
+        .select_related('conversation')
+    )
     total = 0
     for participant in participants:
         qs = Message.objects.filter(conversation=participant.conversation).exclude(sender=user)
@@ -147,10 +160,13 @@ def check_message_rate_limit(user):
 
 
 def get_inbox_entries(user):
-    sync_team_participants()
+    organization = get_user_organization(user)
+    if organization is None:
+        return []
+    sync_team_participants(user)
     participants = (
         ConversationParticipant.objects
-        .filter(user=user)
+        .filter(user=user, conversation__organization=organization)
         .select_related('conversation', 'conversation__user_a', 'conversation__user_b')
         .prefetch_related('conversation__user_a__profile', 'conversation__user_b__profile')
     )
@@ -192,8 +208,14 @@ def get_inbox_entries(user):
 
 def latest_unread_team_message(user):
     """Latest team chat message the user has not read (excludes own messages)."""
-    sync_team_participants()
-    conversation = Conversation.objects.filter(conversation_type=Conversation.TYPE_TEAM).first()
+    organization = get_user_organization(user)
+    if organization is None:
+        return None, None
+    sync_team_participants(user)
+    conversation = Conversation.objects.filter(
+        conversation_type=Conversation.TYPE_TEAM,
+        organization=organization,
+    ).first()
     if not conversation:
         return None, None
     participant = conversation.participants.filter(user=user).first()
@@ -210,18 +232,6 @@ def latest_unread_team_message(user):
         qs = qs.filter(created_at__gt=participant.last_read_at)
     message = qs.first()
     return message, conversation
-
-
-def latest_team_message():
-    conversation = Conversation.objects.filter(conversation_type=Conversation.TYPE_TEAM).first()
-    if not conversation:
-        return None
-    return (
-        conversation.messages
-        .select_related('sender', 'sender__profile')
-        .order_by('-created_at')
-        .first()
-    )
 
 
 def send_message(conversation, sender, body):
@@ -255,5 +265,5 @@ def send_message(conversation, sender, body):
         'sender_name': user_display_name(sender),
         'preview': message.preview,
         'recipient_user_id': other_user_id,
-    })
+    }, organization_id=conversation.organization_id)
     return message

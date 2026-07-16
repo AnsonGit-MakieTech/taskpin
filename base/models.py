@@ -5,6 +5,56 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.text import slugify
+
+
+class Organization(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_organizations',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def unique_slug(name):
+        base = slugify(name)[:200] or 'organization'
+        slug = base
+        counter = 1
+        while Organization.objects.filter(slug=slug).exists():
+            slug = f'{base}-{counter}'
+            counter += 1
+        return slug
+
+
+class OrganizationMembership(models.Model):
+    ROLE_ADMIN = 'admin'
+    ROLE_MEMBER = 'member'
+    ROLE_CHOICES = [
+        (ROLE_ADMIN, 'Admin'),
+        (ROLE_MEMBER, 'Member'),
+    ]
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='organization_membership',
+    )
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='memberships',
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=ROLE_MEMBER)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['joined_at']
+
+    def __str__(self):
+        return f'{self.user_id} in {self.organization_id} ({self.role})'
 
 
 class UserProfile(models.Model):
@@ -71,6 +121,9 @@ class Task(models.Model):
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='tasks',
+    )
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_UNASSIGNED)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL)
     due_date = models.DateTimeField(null=True, blank=True)
@@ -119,6 +172,9 @@ class Task(models.Model):
 
 
 class ActivityLog(models.Model):
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='activity_logs',
+    )
     actor = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='activity_logs'
     )
@@ -144,6 +200,9 @@ class Conversation(models.Model):
     ]
 
     conversation_type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='conversations',
+    )
     user_a = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True, related_name='+',
     )
@@ -156,9 +215,9 @@ class Conversation(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['conversation_type'],
+                fields=['organization', 'conversation_type'],
                 condition=models.Q(conversation_type='team'),
-                name='unique_team_conversation',
+                name='unique_team_conversation_per_org',
             ),
             models.UniqueConstraint(
                 fields=['user_a', 'user_b'],

@@ -274,6 +274,11 @@
       return;
     }
 
+    const orgId = document.body.dataset.orgId;
+    if (orgId && data.organization_id && String(data.organization_id) !== String(orgId)) {
+      return;
+    }
+
     applyBoardUpdate(data)
       .then(function () {
         const currentUserId = document.body.dataset.userId;

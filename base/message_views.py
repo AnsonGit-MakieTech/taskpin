@@ -1,4 +1,3 @@
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
@@ -7,23 +6,27 @@ from django.views.decorators.http import require_POST
 
 from .models import Conversation, Message
 from . import messaging
+from .organizations import get_org_members, get_user_organization, organization_required
+from .permissions import can_message_user
 
 MESSAGES_PAGE_SIZE = 50
 
 
 def _conversation_or_403(conversation_id, user):
+    organization = get_user_organization(user)
     conversation = get_object_or_404(
         Conversation.objects.select_related('user_a', 'user_b', 'user_a__profile', 'user_b__profile'),
         pk=conversation_id,
+        organization=organization,
     )
     if not messaging.is_participant(conversation, user):
         return None, HttpResponseForbidden('You cannot access this conversation.')
     return conversation, None
 
 
-@login_required
+@organization_required
 def messages_inbox(request, conversation_id=None):
-    messaging.sync_team_participants()
+    messaging.sync_team_participants(request.user)
     inbox_entries = messaging.get_inbox_entries(request.user)
     active_conversation = None
     thread_messages = []
@@ -46,11 +49,8 @@ def messages_inbox(request, conversation_id=None):
         thread_messages = list(reversed(page_obj.object_list))
 
     teammates = (
-        User.objects
-        .filter(is_active=True)
+        get_org_members(request.organization)
         .exclude(pk=request.user.pk)
-        .select_related('profile')
-        .order_by('first_name', 'username')
     )
 
     return render(request, 'messages/inbox.html', {
@@ -66,25 +66,32 @@ def messages_inbox(request, conversation_id=None):
     })
 
 
-@login_required
+@organization_required
 def message_start_direct(request, user_id):
-    other_user = get_object_or_404(User, pk=user_id, is_active=True)
+    other_user = get_object_or_404(
+        User,
+        pk=user_id,
+        is_active=True,
+        organization_membership__organization=request.organization,
+    )
     if other_user.pk == request.user.pk:
         return redirect('messages_inbox')
+    if not can_message_user(request.user, other_user):
+        return HttpResponseForbidden('You can only message members of your organization.')
     conversation = messaging.get_or_create_direct_conversation(request.user, other_user)
     return redirect('messages_conversation', conversation_id=conversation.pk)
 
 
-@login_required
+@organization_required
 @require_POST
 def message_send(request):
     conversation_id = request.POST.get('conversation_id')
-    body = request.POST.get('body', '')
     conversation, denied = _conversation_or_403(conversation_id, request.user)
     if denied:
         return denied
 
     try:
+        body = request.POST.get('body', '')
         message = messaging.send_message(conversation, request.user, body)
     except ValueError as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
@@ -105,7 +112,7 @@ def message_send(request):
     })
 
 
-@login_required
+@organization_required
 @require_POST
 def message_mark_read(request):
     conversation_id = request.POST.get('conversation_id')
@@ -119,7 +126,7 @@ def message_mark_read(request):
     })
 
 
-@login_required
+@organization_required
 def message_history(request, conversation_id):
     conversation, denied = _conversation_or_403(conversation_id, request.user)
     if denied:
@@ -150,11 +157,13 @@ def message_history(request, conversation_id):
     })
 
 
-@login_required
+@organization_required
 def message_bubble_fragment(request, message_id):
+    organization = get_user_organization(request.user)
     message = get_object_or_404(
         Message.objects.select_related('sender', 'sender__profile', 'conversation'),
         pk=message_id,
+        conversation__organization=organization,
     )
     conversation = message.conversation
     if not messaging.is_participant(conversation, request.user):
@@ -166,7 +175,7 @@ def message_bubble_fragment(request, message_id):
     return HttpResponse(html)
 
 
-@login_required
+@organization_required
 def unread_count_api(request):
     return JsonResponse({
         'unread_message_count': messaging.unread_count_for_user(request.user),
