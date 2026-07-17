@@ -4,6 +4,8 @@ import logging
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+from .realtime import board_group_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +23,9 @@ class BoardConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.org_group = f'board:{org_id}'
+        self.org_id = org_id
+        self.user_id = user.pk
+        self.org_group = board_group_name(org_id)
 
         try:
             await self.channel_layer.group_add(self.org_group, self.channel_name)
@@ -31,6 +35,7 @@ class BoardConsumer(AsyncWebsocketConsumer):
             return
 
         await self.accept()
+        await database_sync_to_async(self._mark_online)()
         await self.send(text_data=json.dumps({
             'type': 'connection.established',
             'message': 'Connected to TaskPin board updates.',
@@ -39,12 +44,36 @@ class BoardConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         org_group = getattr(self, 'org_group', None)
-        if not org_group:
-            return
-        try:
-            await self.channel_layer.group_discard(org_group, self.channel_name)
-        except Exception:
-            logger.exception('WebSocket failed to leave Redis channel group')
+        if org_group:
+            try:
+                await self.channel_layer.group_discard(org_group, self.channel_name)
+            except Exception:
+                logger.exception('WebSocket failed to leave Redis channel group')
+
+        if getattr(self, 'user_id', None) and getattr(self, 'org_id', None):
+            await database_sync_to_async(self._mark_offline)()
+
+    def _mark_online(self):
+        from .presence import set_user_online, get_online_user_ids
+        from .realtime import notify_board_update
+        from .organizations import Organization
+
+        set_user_online(self.org_id, self.user_id)
+        organization = Organization.objects.get(pk=self.org_id)
+        notify_board_update('presence.update', None, self.user_id, {
+            'online_user_ids': get_online_user_ids(organization),
+        }, organization_id=self.org_id)
+
+    def _mark_offline(self):
+        from .presence import set_user_offline, get_online_user_ids
+        from .realtime import notify_board_update
+        from .organizations import Organization
+
+        set_user_offline(self.org_id, self.user_id)
+        organization = Organization.objects.get(pk=self.org_id)
+        notify_board_update('presence.update', None, self.user_id, {
+            'online_user_ids': get_online_user_ids(organization),
+        }, organization_id=self.org_id)
 
     async def board_update(self, event):
         """Handler for group_send events of type board.update."""

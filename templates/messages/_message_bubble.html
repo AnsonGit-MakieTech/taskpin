@@ -1,3 +1,4 @@
+{% load message_tags %}
 <div class="msg-bubble {% if message.sender_id == request.user.id %}msg-bubble--mine{% else %}msg-bubble--theirs{% endif %}"
      data-message-id="{{ message.id }}"
      data-created="{{ message.created_at|date:'c' }}">
@@ -15,4 +16,7 @@
   </div>
   {% endif %}
   <time class="msg-bubble-time" datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"g:i A" }}</time>
+  {% if message.sender_id == request.user.id %}
+  {% message_read_receipt message request.user %}
+  {% endif %}
 </div>

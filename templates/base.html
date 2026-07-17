@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% if request.user.is_authenticated %}
+  <link rel="stylesheet" href="{% static 'css/presence.css' %}">
+  {% endif %}
   {% block extra_css %}{% endblock %}
 </head>
 <body data-can-move="{% if can_move_tasks %}true{% else %}false{% endif %}"
@@ -208,6 +211,7 @@
 {% if request.user.is_authenticated %}
 <script src="{% static 'js/notifications.js' %}"></script>
 <script src="{% static 'js/realtime.js' %}"></script>
+<script src="{% static 'js/presence.js' %}"></script>
 <script src="{% static 'js/messages.js' %}"></script>
 <script src="{% static 'js/deadline-reminders.js' %}"></script>
 <script src="{% static 'js/board-sync.js' %}"></script>

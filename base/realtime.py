@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 def board_group_name(organization_id):
-    return f'board:{organization_id}'
+    """Return a Channels-safe group name (alphanumerics, hyphen, underscore, period only)."""
+    return f'board.{organization_id}'
 
 
 def notify_board_update(action, task_id=None, actor_id=None, extra=None, organization_id=None):

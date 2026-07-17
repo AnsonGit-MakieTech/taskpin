@@ -58,6 +58,12 @@
 
 .member-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
 
+.member-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 12px;
+}
+
 .member-avatar {
   width: 52px;
   height: 52px;
@@ -68,7 +74,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .member-name {

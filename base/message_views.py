@@ -67,6 +67,10 @@ def messages_inbox(request, conversation_id=None):
         .exclude(pk=request.user.pk)
     )
 
+    team_others_count = 0
+    if active_conversation and active_conversation.conversation_type == Conversation.TYPE_TEAM:
+        team_others_count = active_conversation.participants.exclude(user=request.user).count()
+
     return render(request, 'messages/inbox.html', {
         'inbox_entries': inbox_entries,
         'active_conversation': active_conversation,
@@ -76,6 +80,7 @@ def messages_inbox(request, conversation_id=None):
         'thread_messages': thread_messages,
         'page_obj': page_obj,
         'teammates': teammates,
+        'team_others_count': team_others_count,
         'unread_message_count': messaging.unread_count_for_user(request.user),
     })
 

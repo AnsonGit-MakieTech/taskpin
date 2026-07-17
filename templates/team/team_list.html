@@ -29,9 +29,12 @@
   <div class="member-grid">
     {% for member in members %}
     <div class="member-card">
-      <div class="member-avatar"
-           style="background: {% if member.profile %}{{ member.profile.avatar_color }}{% else %}#FFB74D{% endif %};">
-        {% if member.profile %}{{ member.profile.initials }}{% else %}{{ member.username|slice:":2"|upper }}{% endif %}
+      <div class="member-avatar-wrap">
+        <div class="member-avatar"
+             style="background: {% if member.profile %}{{ member.profile.avatar_color }}{% else %}#FFB74D{% endif %};">
+          {% if member.profile %}{{ member.profile.initials }}{% else %}{{ member.username|slice:":2"|upper }}{% endif %}
+        </div>
+        <span class="presence-dot" data-presence-user-id="{{ member.pk }}" hidden aria-label="Online"></span>
       </div>
       <div class="member-name">
         {% if member.profile %}{{ member.profile.display_name }}{% else %}{{ member.get_full_name|default:member.username }}{% endif %}

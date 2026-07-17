@@ -320,3 +320,21 @@ A built-in messaging system so teammates can chat without leaving TaskPin — si
 - [x] Style messages page to match theme (warm background, rounded bubbles, friendly typography)
 - [x] Paginate or lazy-load older messages when scrolling up in a thread
 
+---
+
+## Task 24 — Online presence & read receipts
+
+### Online presence
+- [x] Track online users per organization via cache (WebSocket connect/disconnect + heartbeat)
+- [x] Broadcast `presence.update` over existing WebSocket with current online user IDs
+- [x] Green presence dot on **Team Board** member tiles
+- [x] Green presence dot on **Team** list member cards
+- [x] API: `GET /api/presence/online/`, `POST /api/presence/heartbeat/`
+
+### Read receipts (Messenger-style)
+- [x] Use `ConversationParticipant.last_read_at` to compute read status
+- [x] Direct chats: show **Seen** on your messages when the other person has read them
+- [x] Team chat: show **Seen**, **Seen by [name]**, or **Seen by N** when teammates have read
+- [x] Broadcast `conversation.read` when a user catches up on unread messages
+- [x] Realtime receipt updates in open thread via `messages.js`
+

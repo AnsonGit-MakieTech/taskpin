@@ -208,6 +208,65 @@
       .catch(function () {});
   }
 
+  function handleConversationRead(data) {
+    if (!data.conversation_id || !data.read_at) {
+      return;
+    }
+    if (String(data.reader_id) === String(currentUserId)) {
+      return;
+    }
+    if (!isThreadOpen(data.conversation_id)) {
+      return;
+    }
+
+    const readAt = new Date(data.read_at);
+    const isTeam = data.conversation_type === 'team' || activeConversationType === 'team';
+    const bubbles = document.querySelectorAll('.msg-bubble--mine[data-created]');
+
+    bubbles.forEach(function (bubble) {
+      const created = new Date(bubble.dataset.created);
+      if (created > readAt) {
+        return;
+      }
+
+      if (!isTeam) {
+        let receipt = bubble.querySelector('.msg-read-receipt');
+        if (!receipt) {
+          receipt = document.createElement('span');
+          receipt.className = 'msg-read-receipt';
+          bubble.appendChild(receipt);
+        }
+        receipt.hidden = false;
+        receipt.textContent = 'Seen';
+        return;
+      }
+
+      let receipt = bubble.querySelector('.msg-read-receipt');
+      if (!receipt) {
+        receipt = document.createElement('span');
+        receipt.className = 'msg-read-receipt';
+        receipt.dataset.readCount = '0';
+        receipt.dataset.teamOthers = String(
+          parseInt(document.body.dataset.teamOthersCount || '0', 10) || 0
+        );
+        bubble.appendChild(receipt);
+      }
+
+      const teamOthers = parseInt(receipt.dataset.teamOthers || '0', 10);
+      let readCount = parseInt(receipt.dataset.readCount || '0', 10) + 1;
+      receipt.dataset.readCount = String(readCount);
+      receipt.hidden = false;
+
+      if (teamOthers > 0 && readCount >= teamOthers) {
+        receipt.textContent = 'Seen';
+      } else if (readCount === 1) {
+        receipt.textContent = 'Seen by ' + (data.reader_name || 'teammate');
+      } else {
+        receipt.textContent = 'Seen by ' + readCount;
+      }
+    });
+  }
+
   function handleMessageNew(data) {
     const conversationId = data.conversation_id;
     const isSender = String(data.actor_id) === String(currentUserId);
@@ -684,6 +743,12 @@
         return;
       }
       handleMessageNew(data);
+    } else if (data.action === 'conversation.read') {
+      const orgId = document.body.dataset.orgId;
+      if (orgId && data.organization_id && String(data.organization_id) !== String(orgId)) {
+        return;
+      }
+      handleConversationRead(data);
     }
   });
 

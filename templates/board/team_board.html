@@ -99,9 +99,12 @@
            data-search="{% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.get_full_name|default:entry.user.username }}{% endif %} {{ entry.user.username }}">
         <button type="button" class="member-tile-open" aria-label="View tasks for {% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.username }}{% endif %}">
           <span class="count-badge{% if not entry.tasks %} count-badge--empty{% endif %}">{{ entry.tasks|length }}</span>
-          <div class="user-avatar"
-               style="background: {% if entry.user.profile %}{{ entry.user.profile.avatar_color }}{% else %}#FFB74D{% endif %};">
-            {% if entry.user.profile %}{{ entry.user.profile.initials }}{% else %}{{ entry.user.username|slice:":2"|upper }}{% endif %}
+          <div class="user-avatar-wrap">
+            <div class="user-avatar"
+                 style="background: {% if entry.user.profile %}{{ entry.user.profile.avatar_color }}{% else %}#FFB74D{% endif %};">
+              {% if entry.user.profile %}{{ entry.user.profile.initials }}{% else %}{{ entry.user.username|slice:":2"|upper }}{% endif %}
+            </div>
+            <span class="presence-dot" data-presence-user-id="{{ entry.user.pk }}" hidden aria-label="Online"></span>
           </div>
           <div class="member-tile-meta">
             <div class="member-tile-name">

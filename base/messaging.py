@@ -145,10 +145,92 @@ def unread_count_for_conversation(conversation, user):
     return qs.count()
 
 
+def read_receipt_label(message, viewer):
+    """Return Messenger-style read receipt text for the sender's own messages."""
+    if message.sender_id != viewer.pk:
+        return ''
+
+    conversation = message.conversation
+    msg_time = message.created_at
+
+    if conversation.conversation_type == Conversation.TYPE_DIRECT:
+        other = other_user_in_direct(conversation, viewer)
+        if not other:
+            return ''
+        participant = conversation.participants.filter(user=other).first()
+        if participant and participant.last_read_at and participant.last_read_at >= msg_time:
+            return 'Seen'
+        return ''
+
+    others = list(conversation.participants.exclude(user=viewer).select_related('user', 'user__profile'))
+    total_others = len(others)
+    if total_others == 0:
+        return ''
+
+    readers = [p for p in others if p.last_read_at and p.last_read_at >= msg_time]
+    count = len(readers)
+    if count == 0:
+        return ''
+    if count >= total_others:
+        return 'Seen'
+    if count == 1:
+        return f'Seen by {user_display_name(readers[0].user)}'
+    return f'Seen by {count}'
+
+
+def read_receipt_context(message, viewer):
+    """Template context for read receipt markup."""
+    if message.sender_id != viewer.pk:
+        return {'show': False}
+
+    label = read_receipt_label(message, viewer)
+    conversation = message.conversation
+    is_team = conversation.conversation_type == Conversation.TYPE_TEAM
+    team_others = 0
+    read_count = 0
+
+    if is_team:
+        others = list(conversation.participants.exclude(user=viewer))
+        team_others = len(others)
+        read_count = sum(
+            1 for p in others
+            if p.last_read_at and p.last_read_at >= message.created_at
+        )
+    elif label:
+        read_count = 1
+
+    return {
+        'show': True,
+        'label': label,
+        'is_team': is_team,
+        'team_others': team_others,
+        'read_count': read_count,
+    }
+
+
 def mark_conversation_read(conversation, user):
     participant = ensure_participant(conversation, user)
-    participant.last_read_at = timezone.now()
+    previous_read = participant.last_read_at
+    now = timezone.now()
+
+    unread_qs = Message.objects.filter(conversation=conversation).exclude(sender=user)
+    if previous_read:
+        unread_qs = unread_qs.filter(created_at__gt=previous_read)
+    had_unread = unread_qs.exists()
+
+    participant.last_read_at = now
     participant.save(update_fields=['last_read_at'])
+
+    if not had_unread and previous_read is not None:
+        return
+
+    notify_board_update('conversation.read', None, user.id, {
+        'conversation_id': conversation.id,
+        'reader_id': user.id,
+        'reader_name': user_display_name(user),
+        'read_at': participant.last_read_at.isoformat(),
+        'conversation_type': conversation.conversation_type,
+    }, organization_id=conversation.organization_id)
 
 
 def check_message_rate_limit(user):

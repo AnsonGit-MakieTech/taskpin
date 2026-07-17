@@ -1,0 +1,6 @@
+{% if show %}
+<span class="msg-read-receipt"
+      {% if not label %}hidden{% endif %}
+      data-read-count="{{ read_count }}"
+      {% if is_team %}data-team-others="{{ team_others }}"{% endif %}>{{ label }}</span>
+{% endif %}

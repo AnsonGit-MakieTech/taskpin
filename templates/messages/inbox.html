@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{% static 'css/messages.css' %}">
 {% endblock %}
 
-{% block body_attrs %}data-messages-page="inbox"{% if active_conversation %} data-active-conversation-id="{{ active_conversation.pk }}" data-active-conversation-type="{{ active_conversation.conversation_type }}"{% endif %}{% endblock %}
+{% block body_attrs %}data-messages-page="inbox"{% if active_conversation %} data-active-conversation-id="{{ active_conversation.pk }}" data-active-conversation-type="{{ active_conversation.conversation_type }}"{% if is_team_chat %} data-team-others-count="{{ team_others_count }}"{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="messages-page {% if active_conversation and request.resolver_match.url_name == 'messages_conversation' %}messages-page--thread-open{% endif %}">

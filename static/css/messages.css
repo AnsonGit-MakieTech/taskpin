@@ -507,6 +507,20 @@ body[data-messages-page="inbox"] .main-content > .messages {
   text-align: right;
 }
 
+.msg-read-receipt {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  margin-top: 2px;
+  text-align: right;
+  opacity: .85;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.msg-bubble--theirs .msg-read-receipt {
+  display: none;
+}
+
 .messages-compose {
   padding: 12px 16px 16px;
   background: var(--white);

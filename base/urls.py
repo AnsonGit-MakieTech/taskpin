@@ -2,6 +2,7 @@ from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
 from . import message_views
+from . import presence_views
 
 urlpatterns = [
     path('', views.team_board, name='team_board'),
@@ -18,6 +19,8 @@ urlpatterns = [
     path('messages/<int:conversation_id>/history/', message_views.message_history, name='message_history'),
     path('messages/bubble/<int:message_id>/', message_views.message_bubble_fragment, name='message_bubble_fragment'),
     path('api/messages/unread-count/', message_views.unread_count_api, name='messages_unread_count'),
+    path('api/presence/online/', presence_views.presence_online, name='presence_online'),
+    path('api/presence/heartbeat/', presence_views.presence_heartbeat, name='presence_heartbeat'),
     path('settings/', views.user_settings, name='user_settings'),
     path(
         'settings/password/',
