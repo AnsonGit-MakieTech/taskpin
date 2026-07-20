@@ -179,6 +179,26 @@ body[data-messages-page="inbox"] .main-content > .messages {
   color: #8a4f00;
 }
 
+.msg-convo-avatar--photo,
+.messages-new-avatar.avatar--photo {
+  overflow: hidden;
+  background: #eee;
+}
+
+.msg-convo-avatar--photo .avatar-img,
+.messages-new-avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.messages-new-menu-item .messages-new-avatar.avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
 .msg-convo-meta {
   flex: 1;
   min-width: 0;

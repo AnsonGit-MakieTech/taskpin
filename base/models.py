@@ -7,7 +7,11 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.text import slugify
 
-from .message_attachments import attachment_upload_to
+from .upload_paths import (
+    message_attachment_upload_to as attachment_upload_to,
+    profile_avatar_upload_to,
+    task_attachment_upload_to,
+)
 
 
 class Organization(models.Model):
@@ -74,6 +78,11 @@ class UserProfile(models.Model):
         blank=True,
         help_text='Optional override for avatar initials (max 2 characters).',
     )
+    avatar_image = models.ImageField(
+        upload_to=profile_avatar_upload_to,
+        blank=True,
+        null=True,
+    )
 
     def initials(self):
         if self.avatar_initials:
@@ -91,6 +100,12 @@ class UserProfile(models.Model):
     def avatar_color(self):
         index = sum(ord(c) for c in self.user.username) % len(self.AVATAR_COLORS)
         return self.AVATAR_COLORS[index]
+
+    @property
+    def avatar_photo_url(self):
+        if self.avatar_image:
+            return self.avatar_image.url
+        return None
 
     def __str__(self):
         return f'{self.display_name()} ({self.role})'
@@ -171,6 +186,41 @@ class Task(models.Model):
         if self.due_date <= now + timedelta(hours=24):
             return 'due_soon'
         return ''
+
+
+class TaskAttachment(models.Model):
+    task = models.ForeignKey(
+        Task, on_delete=models.CASCADE, null=True, blank=True, related_name='attachments',
+    )
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='task_attachments',
+    )
+    uploaded_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='task_uploads',
+    )
+    file = models.FileField(upload_to=task_attachment_upload_to)
+    original_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=127, blank=True)
+    size_bytes = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return self.original_name
+
+    @property
+    def is_image(self):
+        from .file_uploads import is_image_filename
+        return is_image_filename(self.original_name)
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.size_bytes:
+            self.size_bytes = self.file.size
+        if self.file and hasattr(self.file, 'content_type') and self.file.content_type:
+            self.content_type = self.file.content_type
+        super().save(*args, **kwargs)
 
 
 class ActivityLog(models.Model):

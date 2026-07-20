@@ -426,6 +426,88 @@ body {
 }
 
 .done-form { margin: 0; flex-shrink: 0; }
+
+.delete-form { margin: 0; }
+
+/* ── Task attachments (cards & done rows) ── */
+.task-attachments,
+.done-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.task-attachment--image {
+  display: block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.task-attachment--image img {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  max-height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.task-card--urgent .task-attachment--image img {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.task-attachment--file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+  max-width: 100%;
+}
+
+.task-card--urgent .task-attachment--file {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.task-attachment--file:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.task-card--urgent .task-attachment--file:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.task-attachment-icon {
+  display: flex;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.task-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.done-row .task-attachment--image img {
+  max-height: 56px;
+}
+
+.done-row .task-attachment--file {
+  background: var(--bg);
+}
+
 .btn-done {
   background: rgba(0,0,0,.1);
   border: none;
@@ -502,6 +584,10 @@ body {
 .card-menu-item--delete:hover { background: #FFEBEE; }
 
 .card-menu-item--reassign { color: var(--text-muted); font-size: 12px; padding-bottom: 2px; }
+
+.delete-form .card-menu-item {
+  width: 100%;
+}
 
 .reassign-select {
   width: 100%;

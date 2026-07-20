@@ -1,6 +1,7 @@
 """Shared permission helpers for views and templates."""
 
 from .organizations import get_membership, get_user_organization, users_share_organization
+from .models import OrganizationMembership
 
 
 def is_admin(user):
@@ -9,10 +10,7 @@ def is_admin(user):
     if user.is_superuser:
         return True
     membership = get_membership(user)
-    if membership and membership.role == 'admin':
-        return True
-    profile = getattr(user, 'profile', None)
-    return profile is not None and profile.role == 'admin'
+    return membership is not None and membership.role == OrganizationMembership.ROLE_ADMIN
 
 
 def user_can_access_task(user, task):

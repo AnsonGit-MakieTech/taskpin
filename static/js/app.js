@@ -132,13 +132,18 @@
     if (deleteBtn) {
       e.preventDefault();
       closeAllMenus();
+      const deleteForm = deleteBtn.closest('form');
+      if (!deleteForm) {
+        return;
+      }
       openConfirm({
         title: 'Delete this note?',
         message: 'Delete "' + deleteBtn.dataset.taskTitle + '"? This action cannot be undone.',
         okLabel: 'Delete note',
         okClass: 'btn-confirm-ok--danger',
-        form: deleteBtn.closest('form'),
+        form: deleteForm,
       });
+      return;
     }
   });
 

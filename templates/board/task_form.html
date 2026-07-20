@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Create Note — TaskPin{% endblock %}
+{% block title %}{% if task %}Edit Note{% else %}Create Note{% endif %} — TaskPin{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -20,8 +21,13 @@
         {% if task %}Edit Note{% else %}Create a Note{% endif %}
       </h2>
 
-      <form method="post" action="{% if task %}{% url 'task_edit' task.id %}{% else %}{% url 'task_create' %}{% endif %}" id="task-form">
+      <form method="post" action="{% if task %}{% url 'task_edit' task.id %}{% else %}{% url 'task_create' %}{% endif %}"
+            id="task-form"{% if task %} data-task-id="{{ task.pk }}"{% endif %}>
         {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors.0 }}</div>
+        {% endif %}
 
         <div class="form-group">
           <label for="id_title">Task title <span class="label-required">*</span></label>
@@ -38,6 +44,37 @@
           <label for="id_description">Description</label>
           <textarea name="description" id="id_description"
                     placeholder="Optional details…" rows="3">{{ form.description.value|default:'' }}</textarea>
+        </div>
+
+        <div class="form-group task-form-attachments">
+          <div class="task-attach-zone">
+            <span class="task-attach-zone-label">Files &amp; photos <span class="label-optional">(optional)</span></span>
+            <div class="task-attach-toolbar">
+              <button type="button" class="task-attach-btn" id="task-attach-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+                Add files
+              </button>
+              <span class="task-attach-hint">Photos, PDFs, docs — up to 10 files</span>
+            </div>
+            <input type="file" id="task-file-input" multiple hidden
+                   accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx">
+            <div class="task-attach-queue" id="task-attach-queue" hidden></div>
+            {% if existing_attachments %}
+            <div class="task-existing-attachments">
+              {% for attachment in existing_attachments %}
+              <div class="task-attach-chip task-existing-attach" data-attachment-id="{{ attachment.pk }}">
+                <a href="{% url 'task_attachment' attachment.pk %}" class="task-attach-chip-name" target="_blank" rel="noopener">
+                  {{ attachment.original_name }}
+                </a>
+                <button type="button" class="task-attach-chip-remove task-existing-attach-remove" aria-label="Remove">&times;</button>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
         </div>
 
         <div class="form-group">
@@ -115,4 +152,5 @@
 
 {% block extra_js %}
 <script src="{% static 'js/forms.js' %}"></script>
+<script src="{% static 'js/task-attachments.js' %}"></script>
 {% endblock %}

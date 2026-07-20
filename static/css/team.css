@@ -62,6 +62,14 @@
   position: relative;
   display: inline-flex;
   margin-bottom: 12px;
+  width: 52px;
+  height: 52px;
+}
+
+.member-avatar-wrap .avatar.member-avatar {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
 }
 
 .member-avatar {

@@ -1,7 +1,12 @@
+from io import BytesIO
+
 from django import forms
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.utils import timezone
+from PIL import Image
 
+from .file_uploads import validate_profile_image
 from .models import Task, UserProfile
 
 DATETIME_LOCAL_FORMAT = '%Y-%m-%dT%H:%M'
@@ -153,6 +158,14 @@ class ProfileSettingsForm(forms.Form):
             'style': 'text-transform: uppercase;',
         }),
     )
+    avatar_image = forms.ImageField(
+        required=False,
+        label='Profile photo',
+    )
+    remove_avatar = forms.BooleanField(
+        required=False,
+        label='Remove current photo',
+    )
 
     def __init__(self, *args, user=None, profile=None, **kwargs):
         self.user = user
@@ -170,9 +183,43 @@ class ProfileSettingsForm(forms.Form):
             raise forms.ValidationError('Use letters or numbers only.')
         return value
 
+    def clean_avatar_image(self):
+        uploaded = self.cleaned_data.get('avatar_image')
+        if uploaded:
+            validate_profile_image(uploaded)
+        return uploaded
+
+    def _save_avatar_image(self, uploaded_file):
+        image = Image.open(uploaded_file)
+        if image.mode == 'RGBA':
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            background.paste(image, mask=image.split()[3])
+            image = background
+        elif image.mode != 'RGB':
+            image = image.convert('RGB')
+        image.thumbnail((256, 256), Image.Resampling.LANCZOS)
+        buffer = BytesIO()
+        image.save(buffer, format='JPEG', quality=85)
+        if self.profile.avatar_image:
+            self.profile.avatar_image.delete(save=False)
+        self.profile.avatar_image.save(
+            f'user_{self.profile.user_id}.jpg',
+            ContentFile(buffer.getvalue()),
+            save=False,
+        )
+
     def save(self):
         self.user.first_name = self.cleaned_data['first_name'].strip()
         self.user.last_name = self.cleaned_data['last_name'].strip()
         self.user.save(update_fields=['first_name', 'last_name'])
         self.profile.avatar_initials = self.cleaned_data['avatar_initials']
-        self.profile.save(update_fields=['avatar_initials'])
+
+        if self.cleaned_data.get('remove_avatar') and self.profile.avatar_image:
+            self.profile.avatar_image.delete(save=False)
+            self.profile.avatar_image = None
+
+        uploaded = self.cleaned_data.get('avatar_image')
+        if uploaded:
+            self._save_avatar_image(uploaded)
+
+        self.profile.save(update_fields=['avatar_initials', 'avatar_image'])

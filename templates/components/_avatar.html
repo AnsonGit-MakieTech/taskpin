@@ -1,0 +1,8 @@
+<div class="avatar {{ css_class }}{% if size %} avatar--{{ size }}{% endif %}{% if image_url %} avatar--photo{% endif %}"
+     {% if not image_url %}style="background: {{ color }};"{% endif %}>
+  {% if image_url %}
+  <img src="{{ image_url }}" alt="" class="avatar-img" loading="lazy">
+  {% else %}
+  <span class="avatar-initials">{{ initials }}</span>
+  {% endif %}
+</div>

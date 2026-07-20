@@ -53,6 +53,16 @@
 
 .activity-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
 
+.activity-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.activity-avatar-wrap .avatar.activity-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+
 .activity-avatar {
   width: 36px;
   height: 36px;

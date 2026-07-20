@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static taskpin_tags %}
 
 {% block title %}Team Board — TaskPin{% endblock %}
 
@@ -100,10 +100,7 @@
         <button type="button" class="member-tile-open" aria-label="View tasks for {% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.username }}{% endif %}">
           <span class="count-badge{% if not entry.tasks %} count-badge--empty{% endif %}">{{ entry.tasks|length }}</span>
           <div class="user-avatar-wrap">
-            <div class="user-avatar"
-                 style="background: {% if entry.user.profile %}{{ entry.user.profile.avatar_color }}{% else %}#FFB74D{% endif %};">
-              {% if entry.user.profile %}{{ entry.user.profile.initials }}{% else %}{{ entry.user.username|slice:":2"|upper }}{% endif %}
-            </div>
+            {% user_avatar entry.user css_class="user-avatar" %}
             <span class="presence-dot" data-presence-user-id="{{ entry.user.pk }}" hidden aria-label="Online"></span>
           </div>
           <div class="member-tile-meta">

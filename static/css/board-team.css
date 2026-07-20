@@ -271,6 +271,23 @@
   transform: scale(1.02);
 }
 
+.user-avatar-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.user-avatar-wrap .avatar.user-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 15px;
+  letter-spacing: -0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: -2px;
+}
+
 .user-avatar {
   width: 48px;
   height: 48px;

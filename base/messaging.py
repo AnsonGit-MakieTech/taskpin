@@ -99,6 +99,7 @@ def conversation_avatar_context(conversation, viewer):
         'is_team': False,
         'initials': profile.initials() if profile else other.username[:2].upper(),
         'color': profile.avatar_color() if profile else '#64B5F6',
+        'image_url': profile.avatar_photo_url if profile else None,
     }
 
 

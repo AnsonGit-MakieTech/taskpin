@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static taskpin_tags %}
 
 {% block title %}Settings — TaskPin{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/forms.css' %}">
 <link rel="stylesheet" href="{% static 'css/settings.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -14,45 +15,78 @@
   <div class="settings-header">
     <div>
       <h1 class="settings-heading">Settings</h1>
-      <p class="settings-sub">Manage your profile and account</p>
+      <p class="settings-sub">Your profile — how teammates see you on the board</p>
     </div>
-    <div class="settings-avatar-preview"
-         style="background: {{ profile.avatar_color }};">
-      {{ profile.initials }}
-    </div>
+    {% user_avatar request.user css_class="settings-avatar-preview" %}
   </div>
 
   <div class="settings-grid">
 
     <section class="settings-card">
       <h2 class="settings-card-title">Profile</h2>
-      <p class="settings-card-desc">Your name appears on task boards and activity logs.</p>
+      <p class="settings-card-desc">Update your name and photo. These show up on boards, messages, and activity.</p>
 
-      <form method="post" class="settings-form">
+      <form method="post" class="settings-form" enctype="multipart/form-data">
         {% csrf_token %}
+
+        <div class="settings-photo-card">
+          <p class="settings-photo-card-title">Your photo</p>
+          <p class="settings-photo-card-desc">Add a friendly face, or keep your colorful initials — totally up to you.</p>
+          <div class="settings-avatar-upload">
+            <div class="settings-avatar-upload-preview">
+              {% user_avatar request.user css_class="settings-avatar-preview" %}
+            </div>
+            <div class="settings-avatar-upload-fields">
+              <div class="settings-file-picker">
+                <input type="file" name="avatar_image" id="id_avatar_image" accept=".jpg,.jpeg,.png,.webp">
+                <label for="id_avatar_image" class="settings-file-picker-label">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  Choose a photo
+                </label>
+              </div>
+              {% if form.avatar_image.errors %}
+              <p class="field-error">{{ form.avatar_image.errors.0 }}</p>
+              {% else %}
+              <p class="field-hint" style="margin-top:8px;">JPG, PNG, or WebP · max 2 MB</p>
+              {% endif %}
+              {% if profile.avatar_image %}
+              <label class="settings-avatar-remove">
+                <input type="checkbox" name="remove_avatar" id="id_remove_avatar">
+                Remove photo and use initials instead
+              </label>
+              {% endif %}
+            </div>
+          </div>
+        </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="id_first_name">First name</label>
             <input type="text" name="first_name" id="id_first_name"
-                   value="{{ form.first_name.value|default:'' }}">
+                   value="{{ form.first_name.value|default:'' }}"
+                   placeholder="Your first name">
           </div>
           <div class="form-group">
             <label for="id_last_name">Last name</label>
             <input type="text" name="last_name" id="id_last_name"
-                   value="{{ form.last_name.value|default:'' }}">
+                   value="{{ form.last_name.value|default:'' }}"
+                   placeholder="Your last name">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="id_avatar_initials">Avatar initials</label>
+          <label for="id_avatar_initials">Initials fallback</label>
           <input type="text" name="avatar_initials" id="id_avatar_initials"
                  value="{{ form.avatar_initials.value|default:'' }}"
                  maxlength="2" placeholder="e.g. JD" class="input-initials">
           {% if form.avatar_initials.errors %}
             <p class="field-error">{{ form.avatar_initials.errors.0 }}</p>
           {% else %}
-            <p class="field-hint">{{ form.avatar_initials.help_text }}</p>
+            <p class="field-hint">Shown when you don't have a photo — leave blank to auto-generate from your name.</p>
           {% endif %}
         </div>
 
@@ -62,12 +96,12 @@
             <span class="settings-role-badge settings-role-badge--{% if role_label == 'Admin' %}admin{% else %}member{% endif %}">
               {{ role_label }}
             </span>
-            <span class="field-hint">Contact an admin to change your role.</span>
+            <span class="field-hint">Ask a team admin if you need your role changed.</span>
           </div>
         </div>
 
         <div class="form-actions settings-form-actions">
-          <button type="submit" class="btn-submit">Save Profile</button>
+          <button type="submit" class="btn-submit">Save changes</button>
         </div>
       </form>
     </section>
@@ -79,7 +113,7 @@
       <div class="settings-account-row">
         <div>
           <div class="settings-account-label">Password</div>
-          <div class="settings-account-hint">Update your login password</div>
+          <div class="settings-account-hint">Keep your account secure</div>
         </div>
         <a href="{% url 'password_change' %}" class="btn-settings-link">Change password</a>
       </div>

@@ -39,6 +39,16 @@
 
 .form-group { margin-bottom: 18px; }
 
+.label-required { color: var(--red); }
+
+.label-optional {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #B0AAA0;
+  font-size: 11px;
+}
+
 .form-group label {
   display: block;
   font-size: 12px;
@@ -179,8 +189,6 @@
   margin-top: 5px;
   font-weight: 500;
 }
-
-.label-required { color: var(--red); }
 
 .select-wrap { position: relative; }
 .select-wrap::after {

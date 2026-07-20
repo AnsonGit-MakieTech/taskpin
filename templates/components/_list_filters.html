@@ -1,0 +1,74 @@
+{% load taskpin_tags %}
+<div class="list-filters-wrap">
+  <form class="list-filters" method="get" action="">
+    <div class="list-filters-head">
+      <span class="list-filters-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </span>
+      <div>
+        <p class="list-filters-title">
+          {% if filter_type == 'done' %}Find completed notes{% else %}Filter the timeline{% endif %}
+        </p>
+        <p class="list-filters-sub">Narrow things down — mix and match any filters you like.</p>
+      </div>
+    </div>
+
+    {% if filter_type == 'done' %}
+    <div class="list-filters-row">
+      <label class="list-filter">
+        <span class="list-filter-label">Search by title</span>
+        <input type="search" name="q" value="{{ filters.q }}" placeholder="e.g. weekly report" class="list-filter-input">
+      </label>
+      <label class="list-filter">
+        <span class="list-filter-label">Assigned to</span>
+        <select name="assignee" class="list-filter-select">
+          <option value="">Everyone</option>
+          {% for member in members %}
+          <option value="{{ member.pk }}" {% if filters.assignee == member.pk|stringformat:"s" %}selected{% endif %}>
+            {% if member.profile %}{{ member.profile.display_name }}{% else %}{{ member.get_full_name|default:member.username }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">Completed from</span>
+        <input type="date" name="from" value="{{ filters.from }}" class="list-filter-input">
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">Completed until</span>
+        <input type="date" name="to" value="{{ filters.to }}" class="list-filter-input">
+      </label>
+    </div>
+    {% elif filter_type == 'activity' %}
+    <div class="list-filters-row">
+      <label class="list-filter">
+        <span class="list-filter-label">Who did it</span>
+        <select name="actor" class="list-filter-select">
+          <option value="">Everyone</option>
+          {% for member in members %}
+          <option value="{{ member.pk }}" {% if filters.actor == member.pk|stringformat:"s" %}selected{% endif %}>
+            {% if member.profile %}{{ member.profile.display_name }}{% else %}{{ member.get_full_name|default:member.username }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">From</span>
+        <input type="date" name="from" value="{{ filters.from }}" class="list-filter-input">
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">Until</span>
+        <input type="date" name="to" value="{{ filters.to }}" class="list-filter-input">
+      </label>
+    </div>
+    {% endif %}
+
+    <div class="list-filters-actions">
+      <button type="submit" class="list-filter-apply">Show results</button>
+      <a href="?" class="list-filter-clear">Reset filters</a>
+    </div>
+  </form>
+</div>

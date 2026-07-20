@@ -1,101 +1,103 @@
-{% extends 'base.html' %}
-{% load static taskpin_tags %}
-
-{% block title %}Activity — TaskPin{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/activity.css' %}">
-{% endblock %}
-
-{% block content %}
-<div class="activity-page">
-
-  <div class="activity-header">
-    <div>
-      <h1 class="activity-heading">Activity</h1>
-      <p class="activity-sub">Team actions on tasks</p>
-    </div>
-    {% if page_obj.paginator.count %}
-    <div class="activity-count-pill">
-      {{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}
-    </div>
-    {% endif %}
-  </div>
-
-  {% if entries %}
-  <div class="activity-timeline">
-    {% for entry in entries %}
-    <div class="activity-item">
-      <div class="activity-avatar"
-           style="background: {% if entry.actor and entry.actor.profile %}{{ entry.actor.profile.avatar_color }}{% else %}#64B5F6{% endif %};">
-        {% if entry.actor %}
-          {% if entry.actor.profile %}{{ entry.actor.profile.initials }}{% else %}{{ entry.actor.username|slice:":2"|upper }}{% endif %}
-        {% else %}
-          ?
-        {% endif %}
-      </div>
-
-      <div class="activity-body">
-        <p class="activity-action">{{ entry.action }}</p>
-        <div class="activity-meta">
-          {% if entry.actor %}
-          <span class="activity-actor">
-            {% if entry.actor.profile %}{{ entry.actor.profile.display_name }}{% else %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% endif %}
-          </span>
-          <span class="activity-sep">&middot;</span>
-          {% endif %}
-          <time class="activity-time" datetime="{{ entry.timestamp|date:'c' }}">
-            {{ entry.timestamp|date:"M j, Y" }} at {{ entry.timestamp|time:"g:i A" }}
-          </time>
-          {% if entry.task and entry.task|can_manage_task_filter:request.user %}
-          <span class="activity-sep">&middot;</span>
-          <a href="{% url 'task_edit' entry.task.pk %}" class="activity-task-link">{{ entry.task.title }}</a>
-          {% elif entry.task %}
-          <span class="activity-sep">&middot;</span>
-          <span class="activity-task-name">{{ entry.task.title }}</span>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-
-  {% if page_obj.paginator.num_pages > 1 %}
-  <nav class="activity-pagination" aria-label="Activity pages">
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" class="activity-page-link">&larr; Newer</a>
-    {% else %}
-    <span class="activity-page-link activity-page-link--disabled">&larr; Newer</span>
-    {% endif %}
-
-    <span class="activity-page-status">
-      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-    </span>
-
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="activity-page-link">Older &rarr;</a>
-    {% else %}
-    <span class="activity-page-link activity-page-link--disabled">Older &rarr;</span>
-    {% endif %}
-  </nav>
-  {% endif %}
-
-  {% else %}
-  <div class="empty-state">
-    <div class="empty-state-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
-    </div>
-    <div class="empty-state-title">No activity yet</div>
-    <p class="empty-state-hint">
-      When someone creates, moves, edits, or completes a task,<br>
-      it will show up here.
-    </p>
-  </div>
-  {% endif %}
-
-</div>
-{% endblock %}
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}Activity — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/activity.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="activity-page">
+
+  <div class="activity-header">
+    <div>
+      <h1 class="activity-heading">Activity</h1>
+      <p class="activity-sub">Team actions on tasks</p>
+    </div>
+    {% if page_obj.paginator.count %}
+    <div class="activity-count-pill">
+      {{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }}
+    </div>
+    {% endif %}
+  </div>
+
+  {% include 'components/_list_filters.html' with filter_type='activity' members=members filters=filters %}
+
+  {% if entries %}
+  <div class="activity-timeline">
+    {% for entry in entries %}
+    <div class="activity-item">
+      <div class="activity-avatar-wrap">
+        {% if entry.actor %}
+        {% user_avatar entry.actor css_class="activity-avatar" %}
+        {% else %}
+        <div class="avatar activity-avatar" style="background: #64B5F6;">?</div>
+        {% endif %}
+      </div>
+
+      <div class="activity-body">
+        <p class="activity-action">{{ entry.action }}</p>
+        <div class="activity-meta">
+          {% if entry.actor %}
+          <span class="activity-actor">
+            {% if entry.actor.profile %}{{ entry.actor.profile.display_name }}{% else %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% endif %}
+          </span>
+          <span class="activity-sep">&middot;</span>
+          {% endif %}
+          <time class="activity-time" datetime="{{ entry.timestamp|date:'c' }}">
+            {{ entry.timestamp|date:"M j, Y" }} at {{ entry.timestamp|time:"g:i A" }}
+          </time>
+          {% if entry.task and entry.task|can_manage_task_filter:request.user %}
+          <span class="activity-sep">&middot;</span>
+          <a href="{% url 'task_edit' entry.task.pk %}" class="activity-task-link">{{ entry.task.title }}</a>
+          {% elif entry.task %}
+          <span class="activity-sep">&middot;</span>
+          <span class="activity-task-name">{{ entry.task.title }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="list-pagination" aria-label="Activity pages">
+    {% if page_obj.has_previous %}
+    <a href="?{% filter_query page_obj.previous_page_number %}" class="list-page-link">&larr; Newer</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">&larr; Newer</span>
+    {% endif %}
+
+    <span class="list-page-status">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?{% filter_query page_obj.next_page_number %}" class="list-page-link">Older &rarr;</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">Older &rarr;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+    <div class="empty-state-title">No activity yet</div>
+    <p class="empty-state-hint">
+      When someone creates, moves, edits, or completes a task,<br>
+      it will show up here.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

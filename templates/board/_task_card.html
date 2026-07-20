@@ -1,10 +1,12 @@
 {% load taskpin_tags %}
+{% user_can_manage_task request.user task as show_manage %}
+{% user_can_delete_task request.user task as show_delete %}
 <div class="task-card task-card--{{ task.priority }}"
      {% if can_move_tasks %}draggable="true"{% endif %}
      data-task-id="{{ task.id }}">
 
   {# ── Card header: actions menu ── #}
-  {% if task|can_manage_task_filter:request.user or task|can_delete_task_filter:request.user or can_move_tasks %}
+  {% if show_manage or show_delete or can_move_tasks %}
   <div class="task-card-actions">
     <div class="card-menu" data-menu="{{ task.id }}">
       <button type="button" class="card-menu-trigger" onclick="toggleMenu({{ task.id }}, this)" title="Options">
@@ -13,7 +15,7 @@
         </svg>
       </button>
       <div class="card-menu-dropdown" id="menu-{{ task.id }}">
-        {% if task|can_manage_task_filter:request.user %}
+        {% if show_manage %}
         <a href="{% url 'task_edit' task.id %}" class="card-menu-item">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -46,7 +48,8 @@
           </select>
         </form>
         {% endif %}
-        {% if task|can_delete_task_filter:request.user %}
+        {% if show_delete %}
+        <form method="post" action="{% url 'task_delete' task.id %}" class="delete-form">
           {% csrf_token %}
           <button type="button" class="card-menu-item card-menu-item--delete btn-delete-task"
                   data-task-title="{{ task.title }}">
@@ -78,6 +81,11 @@
       <p class="task-description">{{ task.description }}</p>
       {% endif %}
     {% endif %}
+    {% if task.attachments.all %}
+    <div class="task-attachments">
+      {% include 'board/_task_attachments.html' with attachments=task.attachments.all %}
+    </div>
+    {% endif %}
   </div>
 
   {# ── Card footer ── #}
@@ -91,7 +99,7 @@
       </span>
       {% endif %}
     </div>
-    {% if task|can_manage_task_filter:request.user %}
+    {% if show_manage %}
     <form method="post" action="{% url 'mark_done' task.id %}" class="done-form">
       {% csrf_token %}
       <button type="button" class="btn-done btn-done-confirm" data-task-title="{{ task.title }}">Done</button>

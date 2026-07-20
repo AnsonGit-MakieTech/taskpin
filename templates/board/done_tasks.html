@@ -1,57 +1,76 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Done — TaskPin{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/board-done.css' %}">
-{% endblock %}
-
-{% block body_attrs %}data-realtime-page="done_tasks"{% endblock %}
-
-{% block content %}
-<div class="done-page">
-
-  <div class="done-header">
-    <div>
-      <h1 class="done-heading">Done</h1>
-      <p class="done-sub">Completed tasks across all team members</p>
-    </div>
-    {% if tasks %}
-    <div class="done-count-pill" id="done-count-pill">
-      <span class="done-count-dot"></span>
-      <span id="done-count-text">{{ tasks|length }} completed</span>
-    </div>
-    {% else %}
-    <div class="done-count-pill" id="done-count-pill" hidden>
-      <span class="done-count-dot"></span>
-      <span id="done-count-text">0 completed</span>
-    </div>
-    {% endif %}
-  </div>
-
-  {% if tasks %}
-  <div class="done-list" id="done-list">
-    {% for task in tasks %}
-      {% include 'board/_done_row.html' with task=task %}
-    {% endfor %}
-  </div>
-
-  {% else %}
-  <div class="done-list" id="done-list" hidden></div>
-  <div class="empty-state" id="done-empty">
-    <div class="empty-state-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-    </div>
-    <p class="empty-state-title">No completed tasks yet</p>
-    <p class="empty-state-hint">
-      Finished tasks will appear here<br>once your team marks them as done.
-    </p>
-  </div>
-  {% endif %}
-
-</div>
-{% endblock %}
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}Done — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/board-done.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+{% endblock %}
+
+{% block body_attrs %}data-realtime-page="done_tasks"{% endblock %}
+
+{% block content %}
+<div class="done-page">
+
+  <div class="done-header">
+    <div>
+      <h1 class="done-heading">Done</h1>
+      <p class="done-sub">Completed tasks across all team members</p>
+    </div>
+    {% if page_obj.paginator.count %}
+    <div class="done-count-pill" id="done-count-pill">
+      <span class="done-count-dot"></span>
+      <span id="done-count-text">{{ page_obj.paginator.count }} completed</span>
+    </div>
+    {% else %}
+    <div class="done-count-pill" id="done-count-pill" hidden>
+      <span class="done-count-dot"></span>
+      <span id="done-count-text">0 completed</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% include 'components/_list_filters.html' with filter_type='done' members=members filters=filters %}
+
+  {% if tasks %}
+  <div class="done-list" id="done-list">
+    {% for task in tasks %}
+      {% include 'board/_done_row.html' with task=task %}
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="list-pagination" aria-label="Done task pages">
+    {% if page_obj.has_previous %}
+    <a href="?{% filter_query page_obj.previous_page_number %}" class="list-page-link">&larr; Newer</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">&larr; Newer</span>
+    {% endif %}
+    <span class="list-page-status">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% filter_query page_obj.next_page_number %}" class="list-page-link">Older &rarr;</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">Older &rarr;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="done-list" id="done-list" hidden></div>
+  <div class="empty-state" id="done-empty">
+    <div class="empty-state-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <p class="empty-state-title">No completed tasks yet</p>
+    <p class="empty-state-hint">
+      Finished tasks will appear here<br>once your team marks them as done.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -338,3 +338,24 @@ A built-in messaging system so teammates can chat without leaving TaskPin — si
 - [x] Broadcast `conversation.read` when a user catches up on unread messages
 - [x] Realtime receipt updates in open thread via `messages.js`
 
+---
+
+## Task 25 — Attachments, filters, pagination, profile photo
+
+### Done & Activity
+- [x] Paginate Done tasks (e.g. 25/page)
+- [x] Done filters: date range, assignee, title search
+- [x] Activity filters: date range, actor
+- [x] Preserve filters across pagination
+
+### Task attachments
+- [x] TaskAttachment model + migration
+- [x] Upload on task create/edit (multi-file)
+- [x] Show/download attachments on task cards
+- [x] Show on Done rows
+
+### Profile photo
+- [x] avatar_image on UserProfile
+- [x] Upload/remove in Settings
+- [x] Show photo across app with initials fallback
+

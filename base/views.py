@@ -4,11 +4,12 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
-from django.db.models import Case, When, IntegerField, Count, Q
-from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
+from django.db.models import Case, When, IntegerField, Count, Q, Prefetch
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse, FileResponse, Http404
+from django.views.decorators.http import require_GET, require_POST
 from functools import wraps
 
-from .models import Task, ActivityLog, UserProfile
+from .models import Task, ActivityLog, UserProfile, TaskAttachment
 from .forms import TaskCreateForm, InviteMemberForm, RegisterForm, ProfileSettingsForm
 from .permissions import is_admin, can_manage_task, can_delete_task, can_message_user
 from .organizations import (
@@ -21,6 +22,15 @@ from .organizations import (
     add_user_to_organization,
 )
 from .realtime import notify_board_update
+from .filters import (
+    DONE_PAGE_SIZE,
+    ACTIVITY_PAGE_SIZE,
+    filter_done_tasks,
+    filter_activity_logs,
+    filter_params,
+)
+from .file_uploads import validate_upload_batch
+from . import task_attachments
 
 
 def admin_required(view_func):
@@ -63,14 +73,49 @@ def _log_activity(request, action, task):
     )
 
 
+def _task_attachment_prefetch():
+    return Prefetch('attachments', queryset=TaskAttachment.objects.order_by('created_at'))
+
+
+def _tasks_with_attachments(queryset):
+    return queryset.prefetch_related(_task_attachment_prefetch())
+
+
+def _parse_id_list(post, field_name):
+    ids = []
+    for raw_id in post.getlist(field_name):
+        if str(raw_id).isdigit():
+            ids.append(int(raw_id))
+    return ids
+
+
+def _apply_task_attachment_changes(request, task):
+    remove_ids = _parse_id_list(request.POST, 'remove_attachment_ids')
+    if remove_ids:
+        for attachment in task.attachments.filter(pk__in=remove_ids, uploaded_by=request.user):
+            task_attachments.delete_task_attachment(attachment)
+
+    new_ids = _parse_id_list(request.POST, 'attachment_ids')
+    if new_ids:
+        task_attachments.attach_existing_to_task(task, new_ids, request.user)
+
+
+def _delete_task_files(task):
+    for attachment in task.attachments.all():
+        if attachment.file:
+            attachment.file.delete(save=False)
+
+
 @organization_required
 def team_board(request):
     org = request.organization
     users = get_org_members(org)
 
     unassigned_tasks = list(
-        tasks_for_organization(org)
-        .filter(status=Task.STATUS_UNASSIGNED, assigned_to__isnull=True)
+        _tasks_with_attachments(
+            tasks_for_organization(org)
+            .filter(status=Task.STATUS_UNASSIGNED, assigned_to__isnull=True)
+        )
         .annotate(priority_order=PRIORITY_ORDER)
         .order_by('priority_order', 'due_date')
     )
@@ -78,8 +123,10 @@ def team_board(request):
     board = []
     for user in users:
         tasks = list(
-            tasks_for_organization(org)
-            .filter(assigned_to=user, status=Task.STATUS_ASSIGNED)
+            _tasks_with_attachments(
+                tasks_for_organization(org)
+                .filter(assigned_to=user, status=Task.STATUS_ASSIGNED)
+            )
             .annotate(priority_order=PRIORITY_ORDER)
             .order_by('priority_order', 'due_date')
         )
@@ -107,6 +154,17 @@ def task_create(request):
         else:
             task.status = Task.STATUS_UNASSIGNED
         task.save()
+        try:
+            task_attachments.claim_task_attachments(
+                request.organization,
+                request.user,
+                task,
+                _parse_id_list(request.POST, 'attachment_ids'),
+            )
+        except ValueError as exc:
+            form.add_error(None, str(exc))
+            users = get_org_members(request.organization)
+            return render(request, 'board/task_form.html', {'form': form, 'users': users})
         _log_activity(
             request,
             f'Created task "{task.title}"'
@@ -126,7 +184,7 @@ def task_create(request):
 
 @organization_required
 def my_board(request):
-    base_qs = (
+    base_qs = _tasks_with_attachments(
         tasks_for_organization(request.organization)
         .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED)
         .order_by('due_date', 'created_at')
@@ -150,13 +208,23 @@ def my_board(request):
 
 @organization_required
 def done_tasks(request):
-    tasks = list(
+    queryset = filter_done_tasks(
         tasks_for_organization(request.organization)
         .filter(status=Task.STATUS_DONE)
         .select_related('created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile')
-        .order_by('-completed_at')
+        .prefetch_related(_task_attachment_prefetch())
+        .order_by('-completed_at'),
+        request,
     )
-    return render(request, 'board/done_tasks.html', {'tasks': tasks})
+    paginator = Paginator(queryset, DONE_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    members = get_org_members(request.organization).order_by('first_name', 'username')
+    return render(request, 'board/done_tasks.html', {
+        'page_obj': page_obj,
+        'tasks': page_obj.object_list,
+        'members': members,
+        'filters': filter_params(request),
+    })
 
 
 @organization_required
@@ -253,6 +321,17 @@ def task_edit(request, task_id):
             task.assigned_to = None
             task.status = Task.STATUS_UNASSIGNED
         task.save()
+        try:
+            _apply_task_attachment_changes(request, task)
+        except ValueError as exc:
+            form.add_error(None, str(exc))
+            users = get_org_members(request.organization)
+            return render(request, 'board/task_form.html', {
+                'form': form,
+                'users': users,
+                'task': task,
+                'existing_attachments': task.attachments.all(),
+            })
         _log_activity(request, f'Edited task "{task.title}"', task)
         notify_board_update(
             'task.edited',
@@ -271,6 +350,7 @@ def task_edit(request, task_id):
         'form': form,
         'users': users,
         'task': task,
+        'existing_attachments': task.attachments.all() if task else None,
     })
 
 
@@ -284,6 +364,7 @@ def task_delete(request, task_id):
         task_id = task.id
         assigned_to_id = task.assigned_to_id
         org_id = task.organization_id
+        _delete_task_files(task)
         _log_activity(request, f'Deleted task "{title}"', task)
         task.delete()
         notify_board_update('task.deleted', task_id, request.user.id, {
@@ -295,21 +376,25 @@ def task_delete(request, task_id):
     return redirect('team_board')
 
 
-ACTIVITY_LOG_PAGE_SIZE = 20
+ACTIVITY_LOG_PAGE_SIZE = ACTIVITY_PAGE_SIZE
 
 
 @organization_required
 def activity_log(request):
-    queryset = (
+    queryset = filter_activity_logs(
         activity_logs_for_organization(request.organization)
         .select_related('actor', 'actor__profile', 'task')
-        .order_by('-timestamp')
+        .order_by('-timestamp'),
+        request,
     )
     paginator = Paginator(queryset, ACTIVITY_LOG_PAGE_SIZE)
     page_obj = paginator.get_page(request.GET.get('page'))
+    members = get_org_members(request.organization).order_by('first_name', 'username')
     return render(request, 'activity/activity_log.html', {
         'page_obj': page_obj,
         'entries': page_obj.object_list,
+        'members': members,
+        'filters': filter_params(request),
     })
 
 
@@ -318,6 +403,7 @@ def user_settings(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     form = ProfileSettingsForm(
         request.POST or None,
+        request.FILES or None,
         user=request.user,
         profile=profile,
     )
@@ -401,6 +487,11 @@ def task_card_fragment(request, task_id):
     task = get_org_task(request.user, task_id)
     if task.status != Task.STATUS_ASSIGNED and task.status != Task.STATUS_UNASSIGNED:
         return HttpResponse(status=404)
+    task = (
+        Task.objects
+        .prefetch_related(_task_attachment_prefetch())
+        .get(pk=task.pk)
+    )
     html = render(request, 'board/_task_card.html', {
         'task': task,
         'all_users': _active_users(request.organization),
@@ -413,8 +504,95 @@ def task_done_row_fragment(request, task_id):
     task = get_org_task(request.user, task_id)
     if task.status != Task.STATUS_DONE:
         return HttpResponse(status=404)
+    task = (
+        Task.objects
+        .prefetch_related(_task_attachment_prefetch())
+        .select_related('created_by', 'assigned_to', 'created_by__profile', 'assigned_to__profile')
+        .get(pk=task.pk)
+    )
     html = render(request, 'board/_done_row.html', {'task': task}).content.decode('utf-8')
     return HttpResponse(html)
+
+
+@organization_required
+@require_POST
+def task_upload(request):
+    task_id = request.POST.get('task_id')
+    task = None
+    if task_id:
+        task = get_org_task(request.user, task_id)
+        if not can_manage_task(request.user, task):
+            return HttpResponseForbidden('You cannot edit this task.')
+
+    try:
+        files = validate_upload_batch(request.FILES.getlist('files'))
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    uploaded = []
+    try:
+        for uploaded_file in files:
+            attachment = task_attachments.create_pending_task_attachment(
+                request.organization,
+                request.user,
+                uploaded_file,
+                task=task,
+            )
+            uploaded.append({
+                'id': attachment.pk,
+                'name': attachment.original_name,
+                'size': attachment.size_bytes,
+                'is_image': attachment.is_image,
+                'url': f'/task/attachment/{attachment.pk}/',
+            })
+    except PermissionError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=429)
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+
+    return JsonResponse({'ok': True, 'attachments': uploaded})
+
+
+@organization_required
+@require_GET
+def task_attachment(request, attachment_id):
+    attachment = get_object_or_404(
+        TaskAttachment.objects.select_related('task', 'organization'),
+        pk=attachment_id,
+        organization=request.organization,
+    )
+    if not attachment.task_id and attachment.uploaded_by_id != request.user.pk:
+        return HttpResponseForbidden('You cannot access this file.')
+
+    if not attachment.file:
+        raise Http404('File not found.')
+
+    disposition = 'inline' if attachment.is_image else 'attachment'
+    response = FileResponse(
+        attachment.file.open('rb'),
+        content_type=attachment.content_type or 'application/octet-stream',
+    )
+    response['Content-Disposition'] = f'{disposition}; filename="{attachment.original_name}"'
+    response['Content-Length'] = attachment.size_bytes
+    return response
+
+
+@organization_required
+@require_POST
+def task_attachment_delete(request, attachment_id):
+    attachment = get_object_or_404(
+        TaskAttachment.objects.select_related('task'),
+        pk=attachment_id,
+        organization=request.organization,
+    )
+    if attachment.task_id:
+        if not can_manage_task(request.user, attachment.task):
+            return HttpResponseForbidden('You cannot delete this file.')
+    elif attachment.uploaded_by_id != request.user.pk:
+        return HttpResponseForbidden('You cannot delete this file.')
+
+    task_attachments.delete_task_attachment(attachment)
+    return JsonResponse({'ok': True})
 
 
 DEADLINE_LABELS = {

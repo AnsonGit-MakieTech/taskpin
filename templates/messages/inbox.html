@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static taskpin_tags %}
 
 {% block title %}Messages — TaskPin{% endblock %}
 
@@ -30,9 +30,7 @@
           <p class="messages-new-menu-title">Message a teammate</p>
           {% for teammate in teammates %}
           <a href="{% url 'message_start_direct' teammate.pk %}" class="messages-new-menu-item">
-            <span class="messages-new-avatar" style="background: {% if teammate.profile %}{{ teammate.profile.avatar_color }}{% else %}#64B5F6{% endif %};">
-              {% if teammate.profile %}{{ teammate.profile.initials }}{% else %}{{ teammate.username|slice:":2"|upper }}{% endif %}
-            </span>
+            {% user_avatar teammate css_class="messages-new-avatar" %}
             {% if teammate.profile %}{{ teammate.profile.display_name }}{% else %}{{ teammate.get_full_name|default:teammate.username }}{% endif %}
           </a>
           {% empty %}
@@ -64,8 +62,8 @@
         </svg>
       </a>
       <div class="messages-thread-title-wrap">
-        <div class="msg-convo-avatar {% if active_avatar.is_team %}msg-convo-avatar--team{% endif %}"
-             {% if not active_avatar.is_team %}style="background: {{ active_avatar.color }};"{% endif %}>
+        <div class="msg-convo-avatar {% if active_avatar.is_team %}msg-convo-avatar--team{% elif active_avatar.image_url %}msg-convo-avatar--photo{% endif %}"
+             {% if not active_avatar.is_team and not active_avatar.image_url %}style="background: {{ active_avatar.color }};"{% endif %}>
           {% if active_avatar.is_team %}
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -74,6 +72,8 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
+          {% elif active_avatar.image_url %}
+          <img src="{{ active_avatar.image_url }}" alt="" class="avatar-img">
           {% else %}
           {{ active_avatar.initials }}
           {% endif %}

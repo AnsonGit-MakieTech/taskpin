@@ -34,18 +34,10 @@
 
 .settings-back-link:hover { text-decoration: underline; }
 
-.settings-avatar-preview {
+.settings-avatar-preview.avatar {
   width: 52px;
   height: 52px;
-  border-radius: 50%;
   font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
 .settings-grid {
