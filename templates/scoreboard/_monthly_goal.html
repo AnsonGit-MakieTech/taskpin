@@ -1,0 +1,27 @@
+<section class="scoreboard-goal" id="scoreboard-monthly-goal" aria-label="Team monthly goal">
+  <div class="scoreboard-goal-inner{% if monthly_goal.reached %} scoreboard-goal-inner--reached{% endif %}">
+    <div class="scoreboard-goal-copy">
+      <p class="scoreboard-goal-eyebrow">{{ monthly_goal.month_label }} team goal</p>
+      <p class="scoreboard-goal-title">
+        {% if monthly_goal.reached %}
+        🎉 Goal reached — {{ monthly_goal.current }} tasks cleared!
+        {% else %}
+        Clear {{ monthly_goal.target }} tasks together this month
+        {% endif %}
+      </p>
+      <p class="scoreboard-goal-count" id="scoreboard-goal-count">
+        <strong>{{ monthly_goal.current }}</strong> / {{ monthly_goal.target }} completed
+      </p>
+    </div>
+    <div class="scoreboard-goal-bar-wrap">
+      <div class="scoreboard-goal-bar" role="progressbar"
+           aria-valuenow="{{ monthly_goal.progress_pct|floatformat:0 }}"
+           aria-valuemin="0" aria-valuemax="100"
+           aria-label="Monthly team goal progress">
+        <div class="scoreboard-goal-bar-fill" id="scoreboard-goal-bar-fill"
+             style="width: {{ monthly_goal.progress_pct }}%;"></div>
+      </div>
+      <span class="scoreboard-goal-pct" id="scoreboard-goal-pct">{{ monthly_goal.progress_pct|floatformat:0 }}%</span>
+    </div>
+  </div>
+</section>

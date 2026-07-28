@@ -56,3 +56,12 @@ def filter_query(context, page=None):
         return ''
     from base.filters import filter_query_string
     return filter_query_string(request, page=page)
+
+
+@register.simple_tag(takes_context=True)
+def scoreboard_query(context):
+    request = context.get('request')
+    if not request:
+        return ''
+    from base.filters import scoreboard_filter_query_string
+    return scoreboard_filter_query_string(request)

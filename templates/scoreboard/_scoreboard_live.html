@@ -1,0 +1,121 @@
+{% load taskpin_tags %}
+<div id="scoreboard-live">
+  {% include 'scoreboard/_monthly_goal.html' %}
+
+  {% if total_completions %}
+  <div class="scoreboard-summary-pill scoreboard-summary-pill--inline" id="scoreboard-summary-pill">
+    <span class="scoreboard-summary-dot"></span>
+    <span id="scoreboard-summary-text">{{ total_completions }} completion{{ total_completions|pluralize }} in this view</span>
+  </div>
+  {% else %}
+  <div class="scoreboard-summary-pill scoreboard-summary-pill--inline" id="scoreboard-summary-pill" hidden>
+    <span class="scoreboard-summary-dot"></span>
+    <span id="scoreboard-summary-text">0 completions in this view</span>
+  </div>
+  {% endif %}
+
+  {% if my_stats %}
+  {% include 'scoreboard/_my_stats.html' %}
+  {% endif %}
+
+  <div class="scoreboard-xp-hint">
+    <strong>XP:</strong> normal 10 · important 25 · urgent 50
+    <span class="scoreboard-xp-hint-sep">·</span>
+    on-time +5 · early +10
+  </div>
+
+  {% if total_completions %}
+  <section class="scoreboard-hero" aria-label="Top performers">
+    <div class="scoreboard-podium">
+      {% for row in podium %}
+      <article class="scoreboard-podium-slot scoreboard-podium-slot--{{ forloop.counter }}">
+        <span class="scoreboard-podium-medal" aria-hidden="true">
+          {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
+        </span>
+        <div class="scoreboard-podium-avatar">
+          {% user_avatar row.entry.user css_class="scoreboard-avatar" %}
+        </div>
+        <p class="scoreboard-podium-name">
+          {% if row.entry.user.profile %}{{ row.entry.user.profile.display_name }}{% else %}{{ row.entry.user.get_full_name|default:row.entry.user.username }}{% endif %}
+        </p>
+        <p class="scoreboard-podium-level">Level {{ row.entry.level }}</p>
+        <p class="scoreboard-podium-xp">{{ row.entry.xp }} XP</p>
+        {% include 'scoreboard/_badges.html' with badges=row.badges %}
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="scoreboard-chart" aria-label="Team activity chart">
+      <h2 class="scoreboard-chart-title">
+        {% if sort_metric == 'done' %}Completions{% elif sort_metric == 'pending' %}Pending load{% elif sort_metric == 'overdue' %}Overdue{% else %}XP earned{% endif %}
+      </h2>
+      <ul class="scoreboard-chart-bars">
+        {% for row in leaderboard %}
+        <li class="scoreboard-chart-row">
+          <span class="scoreboard-chart-label">
+            {% if row.entry.user.profile %}{{ row.entry.user.profile.display_name }}{% else %}{{ row.entry.user.username }}{% endif %}
+          </span>
+          <div class="scoreboard-chart-track">
+            <div class="scoreboard-chart-fill" style="width: {% widthratio row.chart_value chart_max 100 %}%;"></div>
+          </div>
+          <span class="scoreboard-chart-value">{{ row.chart_value }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section class="scoreboard-leaderboard" aria-label="Full leaderboard">
+    <h2 class="scoreboard-section-title">Full rankings</h2>
+    <ul class="scoreboard-list">
+      {% for row in leaderboard %}
+      <li class="scoreboard-row{% if row.entry.user.pk == request.user.pk %} scoreboard-row--you{% endif %}">
+        <span class="scoreboard-rank">#{{ row.rank }}</span>
+        <div class="scoreboard-row-avatar">
+          {% user_avatar row.entry.user css_class="scoreboard-avatar scoreboard-avatar--sm" %}
+        </div>
+        <div class="scoreboard-row-main">
+          <div class="scoreboard-row-head">
+            <span class="scoreboard-row-name">
+              {% if row.entry.user.profile %}{{ row.entry.user.profile.display_name }}{% else %}{{ row.entry.user.get_full_name|default:row.entry.user.username }}{% endif %}
+            </span>
+            {% if row.entry.user.pk == request.user.pk %}
+            <span class="scoreboard-you-badge">You</span>
+            {% endif %}
+            <span class="scoreboard-level-badge">Lvl {{ row.entry.level }}</span>
+            {% include 'scoreboard/_badges.html' with badges=row.badges %}
+          </div>
+          <div class="scoreboard-xp-bar" role="progressbar"
+               aria-valuenow="{{ row.entry.level_progress_pct|floatformat:0 }}"
+               aria-valuemin="0" aria-valuemax="100"
+               aria-label="Progress to next level">
+            <div class="scoreboard-xp-bar-fill" style="width: {{ row.entry.level_progress_pct }}%;"></div>
+          </div>
+          <p class="scoreboard-row-meta">
+            <span>{{ row.entry.xp }} XP</span>
+            <span>{{ row.entry.done_count }} done</span>
+            <span>{{ row.entry.pending_count }} pending</span>
+            {% if row.entry.overdue_count %}
+            <span class="scoreboard-meta-warn">{{ row.entry.overdue_count }} overdue</span>
+            {% endif %}
+            {% if row.entry.completion_streak > 1 and row.entry.completion_streak < 5 %}
+            <span class="scoreboard-meta-streak">🔥 {{ row.entry.completion_streak }}-day streak</span>
+            {% endif %}
+            {% if row.entry.on_time_rate is not None %}
+            <span>{{ row.entry.on_time_rate|floatformat:0 }}% on-time</span>
+            {% endif %}
+          </p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% else %}
+  <div class="scoreboard-empty">
+    <p class="scoreboard-empty-title">No completions yet for these filters</p>
+    <p class="scoreboard-empty-hint">Try a wider time range, or finish a note on the board to start earning XP.</p>
+    <a href="{% url 'team_board' %}" class="scoreboard-empty-link">Go to Team Board</a>
+  </div>
+  {% endif %}
+</div>

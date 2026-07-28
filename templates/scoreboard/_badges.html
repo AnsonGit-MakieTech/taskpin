@@ -1,0 +1,10 @@
+{% if badges %}
+<ul class="scoreboard-badges" aria-label="Earned badges">
+  {% for badge in badges %}
+  <li class="scoreboard-badge" title="{{ badge.title }}">
+    <span class="scoreboard-badge-icon" aria-hidden="true">{{ badge.icon }}</span>
+    <span class="scoreboard-badge-label">{{ badge.label }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

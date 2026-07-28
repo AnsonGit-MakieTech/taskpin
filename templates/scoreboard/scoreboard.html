@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}Team Scoreboard — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+<link rel="stylesheet" href="{% static 'css/scoreboard.css' %}">
+{% endblock %}
+
+{% block body_attrs %}data-realtime-page="scoreboard"{% endblock %}
+
+{% block content %}
+<div class="scoreboard-page">
+
+  <header class="scoreboard-header">
+    <div>
+      <p class="scoreboard-eyebrow">Quest Log</p>
+      <h1 class="scoreboard-heading">Team Scoreboard</h1>
+      <p class="scoreboard-sub">Celebrate completions, track momentum, and level up together.</p>
+    </div>
+  </header>
+
+  {% include 'scoreboard/_filters.html' %}
+  {% include 'scoreboard/_scoreboard_live.html' %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/scoreboard-sync.js' %}"></script>
+{% endblock %}

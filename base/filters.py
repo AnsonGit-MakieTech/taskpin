@@ -10,6 +10,7 @@ DONE_PAGE_SIZE = 25
 ACTIVITY_PAGE_SIZE = 20
 
 FILTER_KEYS = ('assignee', 'actor', 'from', 'to', 'q')
+SCOREBOARD_FILTER_KEYS = ('period', 'from', 'to', 'sort', 'priority')
 
 
 def parse_date(value):
@@ -77,3 +78,17 @@ def filter_activity_logs(queryset, request):
         queryset = queryset.filter(timestamp__lte=end)
 
     return queryset
+
+
+def scoreboard_filter_params(request):
+    """Current scoreboard filter values from the query string."""
+    return {key: request.GET.get(key, '').strip() for key in SCOREBOARD_FILTER_KEYS}
+
+
+def scoreboard_filter_query_string(request):
+    """Build a query string preserving active scoreboard filters."""
+    params = {}
+    for key, value in scoreboard_filter_params(request).items():
+        if value:
+            params[key] = value
+    return urlencode(params)

@@ -31,6 +31,15 @@ from .filters import (
 )
 from .file_uploads import validate_upload_batch
 from . import task_attachments
+from .scoreboard import (
+    build_scoreboard_rows,
+    get_team_monthly_goal,
+    level_milestone_crossed,
+    member_all_time_xp,
+    milestone_activity_message,
+    parse_scoreboard_filters,
+    xp_for_completed_task,
+)
 
 
 def admin_required(view_func):
@@ -71,6 +80,59 @@ def _log_activity(request, action, task):
         action=action,
         task=task,
     )
+
+
+def _log_activity_for_org(organization, actor, action, task=None):
+    ActivityLog.objects.create(
+        organization=organization,
+        actor=actor,
+        action=action,
+        task=task,
+    )
+
+
+def _maybe_log_level_milestone(request, task, assignee_old_xp: int):
+    assignee = task.assigned_to
+    if not assignee:
+        return
+    new_xp = assignee_old_xp + xp_for_completed_task(task)
+    milestone = level_milestone_crossed(assignee_old_xp, new_xp)
+    if milestone:
+        _log_activity_for_org(
+            request.organization,
+            assignee,
+            milestone_activity_message(assignee, milestone),
+            task=task,
+        )
+
+
+def _scoreboard_monthly_goal_extra(organization):
+    goal = get_team_monthly_goal(organization)
+    return {
+        'monthly_goal_current': goal.current,
+        'monthly_goal_target': goal.target,
+        'monthly_goal_reached': goal.reached,
+    }
+
+
+def _build_scoreboard_context(organization, filters, current_user):
+    leaderboard, chart_max = build_scoreboard_rows(organization, filters)
+    my_stats = next(
+        (row for row in leaderboard if row['entry'].user.pk == current_user.pk),
+        None,
+    )
+    total_completions = sum(row['entry'].done_count for row in leaderboard)
+    return {
+        'leaderboard': leaderboard,
+        'podium': leaderboard[:3],
+        'my_stats': my_stats,
+        'filters': filters.as_template_dict(),
+        'chart_max': chart_max,
+        'total_completions': total_completions,
+        'sort_metric': filters.sort,
+        'period': filters.period,
+        'monthly_goal': get_team_monthly_goal(organization),
+    }
 
 
 def _task_attachment_prefetch():
@@ -234,6 +296,11 @@ def mark_done(request, task_id):
         return HttpResponseForbidden('You cannot mark this task as done.')
     if request.method == 'POST':
         remarks = request.POST.get('completion_remarks', '').strip()[:500]
+        assignee_old_xp = (
+            member_all_time_xp(request.organization, task.assigned_to_id)
+            if task.assigned_to_id
+            else 0
+        )
         task.status = Task.STATUS_DONE
         task.completed_at = timezone.now()
         task.completion_remarks = remarks
@@ -243,11 +310,15 @@ def mark_done(request, task_id):
             preview = remarks if len(remarks) <= 120 else remarks[:117] + '…'
             action = f'{action} — {preview}'
         _log_activity(request, action[:300], task)
+        _maybe_log_level_milestone(request, task, assignee_old_xp)
         notify_board_update(
             'task.done',
             task.id,
             request.user.id,
-            _task_event_extra(task, previous_assigned_to_id=task.assigned_to_id),
+            {
+                **_task_event_extra(task, previous_assigned_to_id=task.assigned_to_id),
+                **_scoreboard_monthly_goal_extra(request.organization),
+            },
             organization_id=task.organization_id,
         )
     return redirect('team_board')
@@ -396,6 +467,21 @@ def activity_log(request):
         'members': members,
         'filters': filter_params(request),
     })
+
+
+@organization_required
+def scoreboard(request):
+    filters = parse_scoreboard_filters(request)
+    context = _build_scoreboard_context(request.organization, filters, request.user)
+    return render(request, 'scoreboard/scoreboard.html', context)
+
+
+@organization_required
+@require_GET
+def scoreboard_fragment(request):
+    filters = parse_scoreboard_filters(request)
+    context = _build_scoreboard_context(request.organization, filters, request.user)
+    return render(request, 'scoreboard/_scoreboard_live.html', context)
 
 
 @organization_required

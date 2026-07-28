@@ -1,0 +1,35 @@
+{% load taskpin_tags %}
+<section class="scoreboard-my-stats" aria-label="Your stats">
+  <div class="scoreboard-my-stats-inner">
+    <div class="scoreboard-my-stats-avatar">
+      {% user_avatar request.user css_class="scoreboard-avatar" %}
+    </div>
+    <div class="scoreboard-my-stats-body">
+      <p class="scoreboard-my-stats-eyebrow">Your quest progress</p>
+      <div class="scoreboard-my-stats-head">
+        <h2 class="scoreboard-my-stats-title">
+          {% if request.user.profile %}{{ request.user.profile.display_name }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
+        </h2>
+        <span class="scoreboard-my-stats-rank">Rank #{{ my_stats.rank }}</span>
+      </div>
+      <p class="scoreboard-my-stats-level">Level {{ my_stats.entry.level }} · {{ my_stats.entry.xp }} XP</p>
+      <div class="scoreboard-xp-bar scoreboard-xp-bar--my" role="progressbar"
+           aria-valuenow="{{ my_stats.entry.level_progress_pct|floatformat:0 }}"
+           aria-valuemin="0" aria-valuemax="100"
+           aria-label="Your progress to next level">
+        <div class="scoreboard-xp-bar-fill" style="width: {{ my_stats.entry.level_progress_pct }}%;"></div>
+      </div>
+      <p class="scoreboard-my-stats-meta">
+        <span>{{ my_stats.entry.done_count }} done in view</span>
+        <span>{{ my_stats.entry.pending_count }} pending</span>
+        {% if my_stats.entry.completion_streak > 1 %}
+        <span class="scoreboard-meta-streak">🔥 {{ my_stats.entry.completion_streak }}-day streak</span>
+        {% endif %}
+        {% if my_stats.entry.on_time_rate is not None %}
+        <span>{{ my_stats.entry.on_time_rate|floatformat:0 }}% on-time</span>
+        {% endif %}
+      </p>
+      {% include 'scoreboard/_badges.html' with badges=my_stats.badges %}
+    </div>
+  </div>
+</section>

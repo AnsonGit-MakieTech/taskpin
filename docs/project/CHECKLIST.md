@@ -359,3 +359,66 @@ A built-in messaging system so teammates can chat without leaving TaskPin — si
 - [x] Upload/remove in Settings
 - [x] Show photo across app with initials fallback
 
+
+
+---
+
+## Task 26 — Team Scoreboard (gamified rankings)
+
+### Scoring & stats engine
+- [x] Create `base/scoreboard.py` — aggregate member stats from existing `Task` data (no new model for MVP)
+- [x] Define XP weights: normal = 10, important = 25, urgent = 50
+- [x] Optional bonus XP: on-time completion (+5), early completion (+10)
+- [x] Level formula from total XP (thresholds: 0 → 100 → 250 → 500 → …)
+- [x] Per-member stats: `done_count`, `pending_count`, `overdue_count`, `xp`, `level`, `level_progress_pct`
+- [x] Optional: completion streak (consecutive days with ≥1 done task in filter range)
+- [x] Optional: on-time rate (% completed before `due_date`)
+- [x] Scope all queries to current organization via `request.organization`
+
+### Filters
+- [x] Time range: this week / this month / all time / custom date range
+- [x] Sort metric: XP (default) / completions / pending load / overdue count
+- [x] Priority filter: all / urgent only / important+ / normal only (for completion stats)
+- [x] Preserve filter query params across page reloads (reuse `base/filters.py` pattern from Done/Activity)
+
+### View & URL
+- [x] Create `scoreboard` view in `base/views.py` with `@organization_required`
+- [x] Register URL `scoreboard/` → `scoreboard` in `base/urls.py`
+- [x] Pass ranked member list + chart dataset + filter state to template
+- [x] Highlight logged-in user's row (“You” badge)
+
+### Page template & UI (game-ish, TaskPin theme)
+- [x] Create `templates/scoreboard/scoreboard.html`
+- [x] Create `static/css/scoreboard.css` — warm cards, XP bars, level badges (cozy RPG, not dark esports)
+- [x] Page header: title (e.g. **Team Scoreboard** or **Quest Log**) + filter bar
+- [x] **Podium** section for top 3 (🥇🥈🥉) with avatar, name, level, XP
+- [x] **Bar chart**: completions (or XP) per member for selected period — CSS bars or Chart.js
+- [x] **Full leaderboard table/list**: rank, avatar, name, level + progress bar, done / pending / overdue counts
+- [x] Friendly empty state when no completed tasks in selected period
+- [x] Mobile-responsive layout (stack podium + chart on small screens)
+
+### Navigation & polish
+- [x] Add **Scoreboard** link to sidebar in `templates/base.html` (icon + active state)
+- [x] Reuse `{% user_avatar %}` for all member avatars
+- [x] Tooltips or hints explaining XP / level (avoid confusing new users)
+- [x] Do not shame low ranks — neutral styling for pending/overdue (workload, not “loser”)
+
+### MVP launch criteria
+- [x] Leaderboard sorts correctly by XP with time filter
+- [x] Chart reflects same filtered data as leaderboard
+- [x] Only org members appear; admins and members see the same board
+- [x] Page loads in reasonable time for teams up to ~20 members (single aggregated query or annotate)
+
+### V2 — Badges & streaks (optional follow-up)
+- [x] Badge definitions: First Blood, Fire Streak, Urgent Responder, Team Player (computed, no DB table)
+- [x] Show badge icons on leaderboard rows
+- [x] “My stats” summary card at top for logged-in user
+
+### V2 — Realtime & team goals (optional follow-up)
+- [x] Bump scoreboard stats on task completion via existing WebSocket (`task.updated` / done event)
+- [x] Team monthly goal banner (e.g. “42 / 50 tasks cleared this month”)
+- [x] Optional: log milestone to `ActivityLog` (e.g. someone hits Level 5 — keep low noise)
+
+### Testing & docs
+- [x] Unit tests for XP calculation, level thresholds, and date-range filtering
+- [x] Mark Task 26 complete in this checklist when MVP ships

@@ -1,0 +1,65 @@
+<div class="list-filters-wrap scoreboard-filters-wrap">
+  <form class="list-filters scoreboard-filters" method="get" action="">
+    <div class="list-filters-head">
+      <span class="list-filters-icon scoreboard-filters-icon" aria-hidden="true">🏆</span>
+      <div>
+        <p class="list-filters-title">Filter the scoreboard</p>
+        <p class="list-filters-sub">Change the time window, sort order, or priority focus.</p>
+      </div>
+    </div>
+
+    <div class="scoreboard-period-pills" role="group" aria-label="Time range presets">
+      <a href="?period=week&amp;sort={{ filters.sort }}&amp;priority={{ filters.priority }}"
+         class="scoreboard-period-pill{% if filters.period == 'week' %} scoreboard-period-pill--active{% endif %}">This week</a>
+      <a href="?period=month&amp;sort={{ filters.sort }}&amp;priority={{ filters.priority }}"
+         class="scoreboard-period-pill{% if filters.period == 'month' %} scoreboard-period-pill--active{% endif %}">This month</a>
+      <a href="?period=all&amp;sort={{ filters.sort }}&amp;priority={{ filters.priority }}"
+         class="scoreboard-period-pill{% if filters.period == 'all' %} scoreboard-period-pill--active{% endif %}">All time</a>
+      <a href="?period=custom&amp;sort={{ filters.sort }}&amp;priority={{ filters.priority }}"
+         class="scoreboard-period-pill{% if filters.period == 'custom' %} scoreboard-period-pill--active{% endif %}">Custom</a>
+    </div>
+
+    <div class="list-filters-row">
+      <label class="list-filter">
+        <span class="list-filter-label">Time range</span>
+        <select name="period" class="list-filter-select">
+          <option value="week" {% if filters.period == 'week' %}selected{% endif %}>This week</option>
+          <option value="month" {% if filters.period == 'month' %}selected{% endif %}>This month</option>
+          <option value="all" {% if filters.period == 'all' %}selected{% endif %}>All time</option>
+          <option value="custom" {% if filters.period == 'custom' %}selected{% endif %}>Custom dates</option>
+        </select>
+      </label>
+      <label class="list-filter">
+        <span class="list-filter-label">Sort by</span>
+        <select name="sort" class="list-filter-select">
+          <option value="xp" {% if filters.sort == 'xp' %}selected{% endif %}>XP (default)</option>
+          <option value="done" {% if filters.sort == 'done' %}selected{% endif %}>Completions</option>
+          <option value="pending" {% if filters.sort == 'pending' %}selected{% endif %}>Pending load</option>
+          <option value="overdue" {% if filters.sort == 'overdue' %}selected{% endif %}>Overdue count</option>
+        </select>
+      </label>
+      <label class="list-filter">
+        <span class="list-filter-label">Completion priority</span>
+        <select name="priority" class="list-filter-select">
+          <option value="all" {% if filters.priority == 'all' %}selected{% endif %}>All priorities</option>
+          <option value="urgent" {% if filters.priority == 'urgent' %}selected{% endif %}>Urgent only</option>
+          <option value="important_plus" {% if filters.priority == 'important_plus' %}selected{% endif %}>Important &amp; urgent</option>
+          <option value="normal" {% if filters.priority == 'normal' %}selected{% endif %}>Normal only</option>
+        </select>
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">From (custom)</span>
+        <input type="date" name="from" value="{{ filters.from }}" class="list-filter-input">
+      </label>
+      <label class="list-filter list-filter--date">
+        <span class="list-filter-label">Until (custom)</span>
+        <input type="date" name="to" value="{{ filters.to }}" class="list-filter-input">
+      </label>
+    </div>
+
+    <div class="list-filters-actions">
+      <button type="submit" class="list-filter-apply">Update scoreboard</button>
+      <a href="{% url 'scoreboard' %}" class="list-filter-clear">Reset filters</a>
+    </div>
+  </form>
+</div>
