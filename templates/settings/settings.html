@@ -17,7 +17,9 @@
       <h1 class="settings-heading">Settings</h1>
       <p class="settings-sub">Your profile — how teammates see you on the board</p>
     </div>
-    {% user_avatar request.user css_class="settings-avatar-preview" %}
+    <div class="js-avatar-preview settings-header-avatar">
+      {% user_avatar request.user css_class="settings-avatar-preview" %}
+    </div>
   </div>
 
   <div class="settings-grid">
@@ -33,7 +35,7 @@
           <p class="settings-photo-card-title">Your photo</p>
           <p class="settings-photo-card-desc">Add a friendly face, or keep your colorful initials — totally up to you.</p>
           <div class="settings-avatar-upload">
-            <div class="settings-avatar-upload-preview">
+            <div class="settings-avatar-upload-preview js-avatar-preview">
               {% user_avatar request.user css_class="settings-avatar-preview" %}
             </div>
             <div class="settings-avatar-upload-fields">
@@ -122,4 +124,8 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/settings.js' %}"></script>
 {% endblock %}

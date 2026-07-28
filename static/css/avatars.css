@@ -1,0 +1,43 @@
+/* Shared avatar component (initials + profile photo) */
+
+.avatar {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  color: #fff;
+  font-weight: 700;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.avatar--photo {
+  background: #E8E4DC;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+.avatar-initials {
+  line-height: 1;
+  user-select: none;
+}
+
+.user-avatar-wrap .avatar,
+.member-avatar-wrap .avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.user-avatar-wrap .avatar.user-avatar.avatar--photo,
+.member-avatar-wrap .avatar.member-avatar.avatar--photo {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: -2px;
+}

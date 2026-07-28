@@ -278,29 +278,21 @@
   flex-shrink: 0;
 }
 
-.user-avatar-wrap .avatar.user-avatar {
-  width: 48px;
-  height: 48px;
-  font-size: 15px;
-  letter-spacing: -0.5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  outline: 2px solid rgba(255, 255, 255, 0.85);
-  outline-offset: -2px;
-}
-
 .user-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-sizing: border-box;
+  font-size: 15px;
   letter-spacing: -0.5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.user-avatar-wrap .avatar.user-avatar {
   outline: 2px solid rgba(255, 255, 255, 0.85);
   outline-offset: -2px;
 }
@@ -309,6 +301,11 @@
   background: linear-gradient(135deg, #F0EEEA 0%, #E4E1DA 100%);
   color: #9A958C;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.user-avatar--unassigned svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .member-tile-meta {

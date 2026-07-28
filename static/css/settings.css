@@ -40,6 +40,10 @@
   font-size: 18px;
 }
 
+.settings-header-avatar .settings-avatar-preview.avatar {
+  box-shadow: 0 2px 10px rgba(46, 46, 46, 0.1);
+}
+
 .settings-grid {
   display: flex;
   flex-direction: column;
