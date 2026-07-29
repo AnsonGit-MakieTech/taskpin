@@ -11,6 +11,7 @@ urlpatterns = [
     path('activity/', views.activity_log, name='activity_log'),
     path('scoreboard/', views.scoreboard, name='scoreboard'),
     path('scoreboard/fragment/', views.scoreboard_fragment, name='scoreboard_fragment'),
+    path('calendar/', views.calendar_view, name='calendar'),
     path('messages/', message_views.messages_inbox, name='messages_inbox'),
     path('messages/<int:conversation_id>/', message_views.messages_inbox, name='messages_conversation'),
     path('messages/start/<int:user_id>/', message_views.message_start_direct, name='message_start_direct'),

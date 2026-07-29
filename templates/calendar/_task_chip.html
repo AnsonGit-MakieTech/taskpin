@@ -1,0 +1,10 @@
+<a href="{% url 'task_edit' item.task.pk %}"
+   class="calendar-chip calendar-chip--{{ item.priority }}{% if item.urgency %} calendar-chip--{{ item.urgency }}{% endif %}{% if item.is_done %} calendar-chip--done{% endif %}"
+   title="{{ item.task.title }}{% if item.is_done %} (done){% endif %}">
+  {% if item.task.assigned_to %}
+  <span class="calendar-chip-assignee" aria-hidden="true">
+    {% if item.task.assigned_to.profile %}{{ item.task.assigned_to.profile.initials }}{% else %}{{ item.task.assigned_to.username|slice:":2"|upper }}{% endif %}
+  </span>
+  {% endif %}
+  <span class="calendar-chip-title">{{ item.task.title }}</span>
+</a>

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}Calendar — TaskPin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+<link rel="stylesheet" href="{% static 'css/calendar.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="calendar-page">
+
+  <header class="calendar-header">
+    <div>
+      <p class="calendar-eyebrow">Plan ahead</p>
+      <h1 class="calendar-heading">Calendar</h1>
+      <p class="calendar-sub">See what’s due across the team — by day, priority, and person.</p>
+    </div>
+    <div class="calendar-header-controls">
+      <div class="calendar-view-pills" role="group" aria-label="Calendar view">
+        <a href="{% url 'calendar' %}?{% calendar_query year month %}&amp;view=month&amp;week_start={{ week_start_key }}"
+           class="calendar-view-pill{% if not is_week_view %} calendar-view-pill--active{% endif %}">Month</a>
+        <a href="{% url 'calendar' %}?{% calendar_query date=anchor_date %}&amp;view=week&amp;week_start={{ week_start_key }}"
+           class="calendar-view-pill{% if is_week_view %} calendar-view-pill--active{% endif %}">Week</a>
+      </div>
+      <div class="calendar-weekstart-pills" role="group" aria-label="Week starts on">
+        <a href="{% url 'calendar' %}?{% if is_week_view %}{% calendar_query date=anchor_date %}{% else %}{% calendar_query year month %}{% endif %}&amp;view={{ view_mode }}&amp;week_start=sun"
+           class="calendar-weekstart-pill{% if week_start_key == 'sun' %} calendar-weekstart-pill--active{% endif %}">Sun</a>
+        <a href="{% url 'calendar' %}?{% if is_week_view %}{% calendar_query date=anchor_date %}{% else %}{% calendar_query year month %}{% endif %}&amp;view={{ view_mode }}&amp;week_start=mon"
+           class="calendar-weekstart-pill{% if week_start_key == 'mon' %} calendar-weekstart-pill--active{% endif %}">Mon</a>
+      </div>
+      <div class="calendar-month-nav" aria-label="Period navigation">
+        {% if is_week_view %}
+        <a href="{% url 'calendar' %}?{% calendar_query date=week_nav.prev_date %}&amp;view=week&amp;week_start={{ week_start_key }}"
+           class="calendar-nav-btn" aria-label="Previous week">←</a>
+        <h2 class="calendar-month-title">{{ week_nav.label }}</h2>
+        <a href="{% url 'calendar' %}?{% calendar_query date=week_nav.next_date %}&amp;view=week&amp;week_start={{ week_start_key }}"
+           class="calendar-nav-btn" aria-label="Next week">→</a>
+        {% else %}
+        <a href="{% url 'calendar' %}?{% calendar_query month_nav.prev_year month_nav.prev_month %}"
+           class="calendar-nav-btn" aria-label="Previous month">←</a>
+        <h2 class="calendar-month-title">{{ month_nav.label }}</h2>
+        <a href="{% url 'calendar' %}?{% calendar_query month_nav.next_year month_nav.next_month %}"
+           class="calendar-nav-btn" aria-label="Next month">→</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <div class="calendar-summary" aria-label="Calendar summary">
+    <span class="calendar-summary-item calendar-summary-item--today">
+      Due today <strong>{{ summary.due_today }}</strong>
+    </span>
+    <span class="calendar-summary-item calendar-summary-item--overdue">
+      Overdue <strong>{{ summary.overdue }}</strong>
+    </span>
+    <span class="calendar-summary-item">
+      This week <strong>{{ summary.due_this_week }}</strong>
+    </span>
+    {% if summary.unscheduled %}
+    <span class="calendar-summary-item calendar-summary-item--unscheduled">
+      Unscheduled <strong>{{ summary.unscheduled }}</strong>
+    </span>
+    {% endif %}
+  </div>
+
+  {% include 'calendar/_filters.html' %}
+
+  {% if not show_grid and not unscheduled %}
+  <div class="calendar-empty">
+    <p class="calendar-empty-icon" aria-hidden="true">📅</p>
+    <p class="calendar-empty-title">Nothing on the calendar yet</p>
+    <p class="calendar-empty-sub">Add due dates to your notes or switch filters to see more tasks.</p>
+    <a href="{% url 'task_create' %}" class="calendar-empty-cta">Create a note</a>
+  </div>
+  {% else %}
+
+  <div class="calendar-body-layout">
+    <div class="calendar-primary">
+      <div class="calendar-grid-wrap{% if is_week_view %} calendar-grid-wrap--week{% endif %}" aria-label="{% if is_week_view %}Week grid{% else %}Month grid{% endif %}">
+        <div class="calendar-weekdays">
+          {% for label in weekday_labels %}
+          <div class="calendar-weekday">{{ label }}</div>
+          {% endfor %}
+        </div>
+        <div class="calendar-grid">
+          {% for week in week_rows %}
+            {% for cell in week %}
+              {% include 'calendar/_day_cell.html' with cell=cell %}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+
+      {% include 'calendar/_next_7_days.html' %}
+
+      <div class="calendar-agenda" aria-label="Agenda list">
+        {% for day, tasks in agenda_items %}
+        <section class="calendar-agenda-day">
+          <h3 class="calendar-agenda-date">
+            {{ day|date:"l, M j" }}
+            {% if day == today %}<span class="calendar-agenda-today-badge">Today</span>{% endif %}
+          </h3>
+          <div class="calendar-agenda-tasks">
+            {% for item in tasks %}
+              {% include 'calendar/_task_chip.html' with item=item %}
+            {% endfor %}
+          </div>
+        </section>
+        {% empty %}
+        <p class="calendar-agenda-empty">No dated tasks this month.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% include 'calendar/_unscheduled_sidebar.html' %}
+  </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/calendar.js' %}"></script>
+{% endblock %}

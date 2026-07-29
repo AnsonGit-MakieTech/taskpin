@@ -11,6 +11,10 @@ ACTIVITY_PAGE_SIZE = 20
 
 FILTER_KEYS = ('assignee', 'actor', 'from', 'to', 'q')
 SCOREBOARD_FILTER_KEYS = ('period', 'from', 'to', 'sort', 'priority')
+CALENDAR_FILTER_KEYS = (
+    'scope', 'assignee', 'priority', 'include_done', 'show_completed_on',
+    'view', 'date', 'week_start', 'year', 'month',
+)
 
 
 def parse_date(value):
@@ -91,4 +95,33 @@ def scoreboard_filter_query_string(request):
     for key, value in scoreboard_filter_params(request).items():
         if value:
             params[key] = value
+    return urlencode(params)
+
+
+def calendar_filter_params(request):
+    """Current calendar filter values from the query string."""
+    return {key: request.GET.get(key, '').strip() for key in CALENDAR_FILTER_KEYS}
+
+
+def calendar_filter_query_string(request, *, year=None, month=None, date=None):
+    """Build a query string preserving active calendar filters and month/week anchor."""
+    params = {}
+    for key in CALENDAR_FILTER_KEYS:
+        if key in ('year', 'month', 'date'):
+            continue
+        value = request.GET.get(key, '').strip()
+        if value:
+            params[key] = value
+    if date is not None:
+        params['date'] = date.strftime('%Y-%m-%d') if hasattr(date, 'strftime') else str(date)
+    elif request.GET.get('date', '').strip():
+        params['date'] = request.GET.get('date', '').strip()
+    if year is not None:
+        params['year'] = year
+    elif request.GET.get('year', '').strip():
+        params['year'] = request.GET.get('year', '').strip()
+    if month is not None:
+        params['month'] = month
+    elif request.GET.get('month', '').strip():
+        params['month'] = request.GET.get('month', '').strip()
     return urlencode(params)

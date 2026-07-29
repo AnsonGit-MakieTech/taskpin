@@ -1,0 +1,17 @@
+<div class="calendar-day{% if not cell.day.in_current_month %} calendar-day--muted{% endif %}{% if cell.day.is_today %} calendar-day--today{% endif %}{% if is_week_view or cell.day.in_current_month %}{% if not cell.tasks %} calendar-day--empty-click{% endif %}{% endif %}{% if is_week_view %} calendar-day--week{% endif %}"
+     {% if is_week_view or cell.day.in_current_month %}{% if not cell.tasks %}data-create-url="{% url 'task_create' %}?due={{ cell.day.day|date:'Y-m-d' }}" title="Click to create a note on {{ cell.day.day|date:'M j' }}"{% endif %}{% endif %}>
+  <div class="calendar-day-head">
+    <span class="calendar-day-num">{{ cell.day.day.day }}</span>
+    {% if is_week_view or cell.day.in_current_month %}
+    <a href="{% url 'task_create' %}?due={{ cell.day.day|date:'Y-m-d' }}"
+       class="calendar-day-add"
+       title="Create note on {{ cell.day.day|date:'M j' }}"
+       aria-label="Create note on {{ cell.day.day|date:'F j' }}">+</a>
+    {% endif %}
+  </div>
+  <div class="calendar-day-tasks">
+    {% for item in cell.tasks %}
+      {% include 'calendar/_task_chip.html' with item=item %}
+    {% endfor %}
+  </div>
+</div>

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -410,3 +410,328 @@ class ScoreboardGoalsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'scoreboard-live')
         self.assertContains(response, 'scoreboard-monthly-goal')
+
+
+class CalendarEngineTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username='admin', password='pass')
+        self.org = create_organization_with_admin('Acme', self.admin)
+        self.member = User.objects.create_user(username='member', password='pass')
+        add_user_to_organization(self.org, self.member)
+
+    def test_month_grid_bounds(self):
+        from base.calendar import build_month_grid, get_calendar_month
+
+        cal_month = get_calendar_month(2026, 3, today=date(2026, 3, 15))
+        weeks = build_month_grid(cal_month, today=date(2026, 3, 15))
+        self.assertGreaterEqual(len(weeks), 4)
+        self.assertEqual(len(weeks[0]), 7)
+        self.assertEqual(weeks[0][0].day, cal_month.grid_start)
+        in_month = sum(1 for week in weeks for day in week if day.in_current_month)
+        self.assertEqual(in_month, 31)
+
+    def test_groups_tasks_by_local_due_date(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        due_day = date(2026, 3, 10)
+        aware_due = timezone.make_aware(datetime.combine(due_day, datetime.min.time().replace(hour=9)))
+        Task.objects.create(
+            title='Due note',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.member,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=due_day,
+        )
+        self.assertIn(due_day, data.tasks_by_date)
+        self.assertEqual(len(data.tasks_by_date[due_day]), 1)
+        item = data.tasks_by_date[due_day][0]
+        self.assertEqual(item.date_source, 'due_date')
+        self.assertEqual(item.task.title, 'Due note')
+
+    def test_unscheduled_bucket(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        Task.objects.create(
+            title='No date',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.member,
+            created_by=self.admin,
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=date(2026, 3, 10),
+        )
+        self.assertEqual(len(data.unscheduled), 1)
+        self.assertEqual(data.summary.unscheduled, 1)
+
+    def test_my_scope_filter(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        due_day = date(2026, 3, 12)
+        aware_due = timezone.make_aware(datetime.combine(due_day, datetime.min.time()))
+        Task.objects.create(
+            title='Member task',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.member,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        Task.objects.create(
+            title='Admin task',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.admin,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='my'),
+            self.member,
+            today=due_day,
+        )
+        titles = {item.task.title for items in data.tasks_by_date.values() for item in items}
+        self.assertEqual(titles, {'Member task'})
+
+    def test_overdue_urgency_on_item(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        due_day = date(2026, 3, 10)
+        aware_due = timezone.make_aware(datetime.combine(due_day, datetime.min.time().replace(hour=8)))
+        Task.objects.create(
+            title='Late',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            priority=Task.PRIORITY_URGENT,
+            assigned_to=self.member,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=date(2026, 3, 15),
+        )
+        item = data.tasks_by_date[due_day][0]
+        self.assertEqual(item.urgency, 'overdue')
+        self.assertEqual(item.priority, Task.PRIORITY_URGENT)
+
+    def test_show_completed_on_completed_at(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        completed_day = date(2026, 3, 18)
+        completed_at = timezone.make_aware(datetime.combine(completed_day, datetime.min.time().replace(hour=14)))
+        Task.objects.create(
+            title='Finished',
+            organization=self.org,
+            status=Task.STATUS_DONE,
+            assigned_to=self.member,
+            created_by=self.admin,
+            due_date=timezone.make_aware(datetime.combine(date(2026, 3, 1), datetime.min.time())),
+            completed_at=completed_at,
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='team', show_completed_on=True),
+            self.admin,
+            today=date(2026, 3, 10),
+        )
+        self.assertIn(completed_day, data.tasks_by_date)
+        self.assertEqual(data.tasks_by_date[completed_day][0].date_source, 'completed_at')
+
+    def test_org_scoping(self):
+        from base.calendar import CalendarFilters, build_calendar_data
+
+        other_admin = User.objects.create_user(username='other', password='pass')
+        other_org = create_organization_with_admin('Other', other_admin)
+        due_day = date(2026, 3, 11)
+        Task.objects.create(
+            title='Foreign',
+            organization=other_org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=other_admin,
+            created_by=other_admin,
+            due_date=timezone.make_aware(datetime.combine(due_day, datetime.min.time())),
+        )
+        data = build_calendar_data(
+            self.org,
+            2026,
+            3,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=due_day,
+        )
+        titles = {item.task.title for items in data.tasks_by_date.values() for item in items}
+        self.assertNotIn('Foreign', titles)
+
+    def test_week_grid_single_row(self):
+        from base.calendar import CalendarFilters, build_week_calendar_data
+
+        anchor = date(2026, 3, 11)
+        data = build_week_calendar_data(
+            self.org,
+            anchor,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=anchor,
+        )
+        self.assertEqual(len(data.weeks), 1)
+        self.assertEqual(len(data.weeks[0]), 7)
+
+    def test_next_7_days_includes_today(self):
+        from base.calendar import CalendarFilters, build_next_7_days_agenda
+
+        today = date(2026, 3, 15)
+        aware_due = timezone.make_aware(datetime.combine(today, datetime.min.time().replace(hour=9)))
+        Task.objects.create(
+            title='Today task',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.member,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        agenda = build_next_7_days_agenda(
+            self.org,
+            CalendarFilters(scope='team'),
+            self.admin,
+            today=today,
+        )
+        self.assertEqual(len(agenda), 7)
+        self.assertEqual(agenda[0][0], today)
+        self.assertEqual(agenda[0][1][0].task.title, 'Today task')
+
+    def test_monday_week_start(self):
+        from base.calendar import WEEK_START_MONDAY, build_month_grid, get_calendar_month
+
+        cal_month = get_calendar_month(2026, 3, today=date(2026, 3, 15), week_start=WEEK_START_MONDAY)
+        weeks = build_month_grid(cal_month, today=date(2026, 3, 15), week_start=WEEK_START_MONDAY)
+        self.assertEqual(weeks[0][0].day.weekday(), 0)
+
+
+class CalendarViewTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username='admin', password='pass')
+        self.org = create_organization_with_admin('Acme', self.admin)
+
+    def test_calendar_requires_login(self):
+        from django.test import Client
+
+        client = Client()
+        response = client.get('/calendar/')
+        self.assertEqual(response.status_code, 302)
+
+    def test_calendar_returns_page(self):
+        from django.test import Client
+
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Calendar')
+        self.assertContains(response, 'calendar-page')
+
+    def test_calendar_shows_dated_task(self):
+        from django.test import Client
+
+        due_day = date(2026, 3, 10)
+        aware_due = timezone.make_aware(datetime.combine(due_day, datetime.min.time().replace(hour=9)))
+        Task.objects.create(
+            title='Calendar note',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.admin,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/?year=2026&month=3')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Calendar note')
+
+    def test_calendar_my_tasks_filter(self):
+        from django.test import Client
+
+        member = User.objects.create_user(username='member', password='pass')
+        add_user_to_organization(self.org, member)
+        due_day = date(2026, 4, 5)
+        aware_due = timezone.make_aware(datetime.combine(due_day, datetime.min.time()))
+        Task.objects.create(
+            title='Mine only',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.admin,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        Task.objects.create(
+            title='Theirs only',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=member,
+            created_by=self.admin,
+            due_date=aware_due,
+        )
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/?year=2026&month=4&scope=my')
+        self.assertContains(response, 'Mine only')
+        self.assertNotContains(response, 'Theirs only')
+
+    def test_calendar_week_view(self):
+        from django.test import Client
+
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/?view=week&date=2026-03-10')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'calendar-grid-wrap--week')
+        self.assertContains(response, 'Next 7 days')
+
+    def test_calendar_unscheduled_sidebar(self):
+        from django.test import Client
+
+        Task.objects.create(
+            title='No due date',
+            organization=self.org,
+            status=Task.STATUS_ASSIGNED,
+            assigned_to=self.admin,
+            created_by=self.admin,
+        )
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/')
+        self.assertContains(response, 'calendar-sidebar')
+        self.assertContains(response, 'No due date')
+
+    def test_calendar_empty_day_clickable(self):
+        from django.test import Client
+
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/calendar/?view=week&date=2026-03-10')
+        self.assertContains(response, 'calendar-day--empty-click')
+        self.assertContains(response, 'data-create-url="/task/create/?due=2026-03-')

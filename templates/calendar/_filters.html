@@ -1,0 +1,76 @@
+{% load taskpin_tags %}
+<div class="list-filters-wrap calendar-filters-wrap">
+  <form class="list-filters calendar-filters" method="get" action="">
+    <input type="hidden" name="view" value="{{ view_mode }}">
+    <input type="hidden" name="week_start" value="{{ week_start_key }}">
+    {% if is_week_view %}
+    <input type="hidden" name="date" value="{{ anchor_date|date:'Y-m-d' }}">
+    {% else %}
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    {% endif %}
+
+    <div class="list-filters-head">
+      <span class="list-filters-icon calendar-filters-icon" aria-hidden="true">📅</span>
+      <div>
+        <p class="list-filters-title">Filter the calendar</p>
+        <p class="list-filters-sub">Switch between your tasks and the full team view.</p>
+      </div>
+    </div>
+
+    <div class="calendar-scope-pills" role="group" aria-label="Task scope">
+      <a href="{% url 'calendar' %}?{% if is_week_view %}{% calendar_query date=anchor_date %}{% else %}{% calendar_query year month %}{% endif %}&amp;view={{ view_mode }}&amp;week_start={{ week_start_key }}&amp;scope=my&amp;priority={{ filters.priority }}{% if filters.assignee %}&amp;assignee={{ filters.assignee }}{% endif %}{% if filters.include_done %}&amp;include_done=1{% endif %}{% if filters.show_completed_on %}&amp;show_completed_on=1{% endif %}"
+         class="calendar-scope-pill{% if filters.scope == 'my' %} calendar-scope-pill--active{% endif %}">My tasks</a>
+      <a href="{% url 'calendar' %}?{% if is_week_view %}{% calendar_query date=anchor_date %}{% else %}{% calendar_query year month %}{% endif %}&amp;view={{ view_mode }}&amp;week_start={{ week_start_key }}&amp;scope=team&amp;priority={{ filters.priority }}{% if filters.assignee %}&amp;assignee={{ filters.assignee }}{% endif %}{% if filters.include_done %}&amp;include_done=1{% endif %}{% if filters.show_completed_on %}&amp;show_completed_on=1{% endif %}"
+         class="calendar-scope-pill{% if filters.scope == 'team' %} calendar-scope-pill--active{% endif %}">Team</a>
+    </div>
+
+    <div class="list-filters-row">
+      <label class="list-filter">
+        <span class="list-filter-label">Scope</span>
+        <select name="scope" class="list-filter-select">
+          <option value="my" {% if filters.scope == 'my' %}selected{% endif %}>My tasks</option>
+          <option value="team" {% if filters.scope == 'team' %}selected{% endif %}>Team</option>
+        </select>
+      </label>
+      <label class="list-filter">
+        <span class="list-filter-label">Assignee</span>
+        <select name="assignee" class="list-filter-select" {% if filters.scope == 'my' %}disabled{% endif %}>
+          <option value="">Everyone</option>
+          {% for member in members %}
+          <option value="{{ member.pk }}" {% if filters.assignee == member.pk|stringformat:"s" %}selected{% endif %}>
+            {% if member.profile %}{{ member.profile.display_name }}{% else %}{{ member.get_full_name|default:member.username }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="list-filter">
+        <span class="list-filter-label">Priority</span>
+        <select name="priority" class="list-filter-select">
+          <option value="all" {% if filters.priority == 'all' %}selected{% endif %}>All priorities</option>
+          <option value="urgent" {% if filters.priority == 'urgent' %}selected{% endif %}>Urgent</option>
+          <option value="important" {% if filters.priority == 'important' %}selected{% endif %}>Important</option>
+          <option value="normal" {% if filters.priority == 'normal' %}selected{% endif %}>Normal</option>
+        </select>
+      </label>
+      <label class="list-filter list-filter--checkbox">
+        <span class="list-filter-label">Status</span>
+        <span class="calendar-filter-checks">
+          <label class="calendar-filter-check">
+            <input type="checkbox" name="include_done" value="1" {% if filters.include_done %}checked{% endif %}>
+            Include done (on due date)
+          </label>
+          <label class="calendar-filter-check">
+            <input type="checkbox" name="show_completed_on" value="1" {% if filters.show_completed_on %}checked{% endif %}>
+            Show on completed date
+          </label>
+        </span>
+      </label>
+    </div>
+
+    <div class="list-filters-actions">
+      <button type="submit" class="list-filter-apply">Update calendar</button>
+      <a href="{% url 'calendar' %}?view={{ view_mode }}&amp;week_start={{ week_start_key }}{% if is_week_view %}&amp;date={{ anchor_date|date:'Y-m-d' }}{% else %}&amp;year={{ year }}&amp;month={{ month }}{% endif %}" class="list-filter-clear">Reset filters</a>
+    </div>
+  </form>
+</div>

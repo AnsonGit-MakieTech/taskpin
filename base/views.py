@@ -3,6 +3,7 @@ from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.core.paginator import Paginator
+from datetime import datetime
 from django.utils import timezone
 from django.db.models import Case, When, IntegerField, Count, Q, Prefetch
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse, FileResponse, Http404
@@ -31,6 +32,20 @@ from .filters import (
 )
 from .file_uploads import validate_upload_batch
 from . import task_attachments
+from .calendar import (
+    VIEW_WEEK,
+    build_agenda_items,
+    build_calendar_data,
+    build_calendar_week_rows,
+    build_next_7_days_agenda,
+    build_week_calendar_data,
+    calendar_has_visible_tasks,
+    get_calendar_month_nav,
+    get_calendar_week_nav,
+    parse_calendar_filters,
+    parse_calendar_view_params,
+    weekday_labels,
+)
 from .scoreboard import (
     build_scoreboard_rows,
     get_team_monthly_goal,
@@ -241,6 +256,13 @@ def task_create(request):
         return redirect('team_board')
 
     users = get_org_members(request.organization)
+    initial_due = request.GET.get('due', '').strip()
+    if initial_due and not request.method == 'POST':
+        from .filters import parse_date
+        due_day = parse_date(initial_due)
+        if due_day:
+            due_dt = timezone.make_aware(datetime.combine(due_day, datetime.min.time().replace(hour=9)))
+            form.initial['due_date'] = due_dt.strftime('%Y-%m-%dT%H:%M')
     return render(request, 'board/task_form.html', {'form': form, 'users': users})
 
 
@@ -482,6 +504,70 @@ def scoreboard_fragment(request):
     filters = parse_scoreboard_filters(request)
     context = _build_scoreboard_context(request.organization, filters, request.user)
     return render(request, 'scoreboard/_scoreboard_live.html', context)
+
+
+@organization_required
+def calendar_view(request):
+    today = timezone.localdate()
+    view_params = parse_calendar_view_params(request, today=today)
+    filters = parse_calendar_filters(request)
+
+    if view_params.view == VIEW_WEEK:
+        data = build_week_calendar_data(
+            request.organization,
+            view_params.anchor_date,
+            filters,
+            request.user,
+            today=today,
+            week_start=view_params.week_start,
+        )
+        period_nav = get_calendar_week_nav(view_params.anchor_date, view_params.week_start)
+    else:
+        data = build_calendar_data(
+            request.organization,
+            view_params.year,
+            view_params.month,
+            filters,
+            request.user,
+            today=today,
+            week_start=view_params.week_start,
+        )
+        period_nav = get_calendar_month_nav(view_params.year, view_params.month)
+
+    week_rows = build_calendar_week_rows(data.weeks, data.tasks_by_date)
+    members = get_org_members(request.organization).order_by('first_name', 'username')
+    next_7_days = build_next_7_days_agenda(
+        request.organization,
+        filters,
+        request.user,
+        today=today,
+    )
+    show_grid = view_params.view == VIEW_WEEK or calendar_has_visible_tasks(data)
+
+    return render(request, 'calendar/calendar.html', {
+        'calendar_month': data.month,
+        'week_rows': week_rows,
+        'weekday_labels': weekday_labels(view_params.week_start),
+        'summary': data.summary,
+        'unscheduled': data.unscheduled,
+        'filters': filters.as_template_dict(),
+        'month_nav': period_nav if view_params.view != VIEW_WEEK else get_calendar_month_nav(
+            view_params.year, view_params.month,
+        ),
+        'week_nav': period_nav if view_params.view == VIEW_WEEK else None,
+        'has_visible_tasks': calendar_has_visible_tasks(data),
+        'show_grid': show_grid,
+        'agenda_items': build_agenda_items(data, today=today),
+        'next_7_days': next_7_days,
+        'members': members,
+        'year': view_params.year,
+        'month': view_params.month,
+        'today': today,
+        'view_mode': view_params.view,
+        'anchor_date': view_params.anchor_date,
+        'week_start_key': view_params.week_start_key,
+        'is_week_view': view_params.view == VIEW_WEEK,
+    })
 
 
 @organization_required

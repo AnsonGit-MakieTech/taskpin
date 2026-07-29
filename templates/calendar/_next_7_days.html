@@ -1,0 +1,23 @@
+<section class="calendar-next-7" aria-label="Next 7 days">
+  <h2 class="calendar-next-7-heading">Next 7 days</h2>
+  <div class="calendar-next-7-list">
+    {% for day, tasks in next_7_days %}
+    <article class="calendar-next-7-day{% if not tasks %} calendar-next-7-day--empty{% endif %}">
+      <header class="calendar-next-7-date">
+        <span class="calendar-next-7-weekday">{{ day|date:"D" }}</span>
+        <span class="calendar-next-7-daynum">{{ day|date:"M j" }}</span>
+        {% if day == today %}<span class="calendar-agenda-today-badge">Today</span>{% endif %}
+      </header>
+      {% if tasks %}
+      <div class="calendar-next-7-tasks">
+        {% for item in tasks %}
+          {% include 'calendar/_task_chip.html' with item=item %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <a href="{% url 'task_create' %}?due={{ day|date:'Y-m-d' }}" class="calendar-next-7-empty-link">Add a note</a>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>

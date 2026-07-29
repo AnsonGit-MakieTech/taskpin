@@ -1,0 +1,22 @@
+<aside class="calendar-sidebar" aria-label="Unscheduled tasks">
+  <h2 class="calendar-sidebar-heading">Unscheduled</h2>
+  <p class="calendar-sidebar-sub">Notes without a due date.</p>
+  {% if unscheduled %}
+  <div class="calendar-sidebar-list">
+    {% for task in unscheduled %}
+    <a href="{% url 'task_edit' task.pk %}"
+       class="calendar-chip calendar-chip--{{ task.priority }} calendar-chip--unscheduled"
+       title="{{ task.title }}">
+      {% if task.assigned_to %}
+      <span class="calendar-chip-assignee" aria-hidden="true">
+        {% if task.assigned_to.profile %}{{ task.assigned_to.profile.initials }}{% else %}{{ task.assigned_to.username|slice:":2"|upper }}{% endif %}
+      </span>
+      {% endif %}
+      <span class="calendar-chip-title">{{ task.title }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="calendar-sidebar-empty">All notes have due dates — nice work!</p>
+  {% endif %}
+</aside>

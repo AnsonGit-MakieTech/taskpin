@@ -65,3 +65,12 @@ def scoreboard_query(context):
         return ''
     from base.filters import scoreboard_filter_query_string
     return scoreboard_filter_query_string(request)
+
+
+@register.simple_tag(takes_context=True)
+def calendar_query(context, year=None, month=None, date=None):
+    request = context.get('request')
+    if not request:
+        return ''
+    from base.filters import calendar_filter_query_string
+    return calendar_filter_query_string(request, year=year, month=month, date=date)
