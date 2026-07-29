@@ -325,6 +325,65 @@
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
+    function mimeToExtension(mimeType) {
+      const map = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+      };
+      return map[mimeType] || '.png';
+    }
+
+    function clipboardImageFileName(file, index, total) {
+      const ext = mimeToExtension(file.type);
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      if (total > 1) {
+        return 'pasted-image-' + stamp + '-' + (index + 1) + ext;
+      }
+      return 'pasted-image-' + stamp + ext;
+    }
+
+    function normalizeUploadFile(file, index, total) {
+      if (file.name && file.name.trim()) {
+        return file;
+      }
+      return new File([file], clipboardImageFileName(file, index, total), { type: file.type || 'image/png' });
+    }
+
+    function collectClipboardImages(clipboardData) {
+      if (!clipboardData) {
+        return [];
+      }
+      const images = [];
+      if (clipboardData.items && clipboardData.items.length) {
+        for (let i = 0; i < clipboardData.items.length; i++) {
+          const item = clipboardData.items[i];
+          if (item.kind === 'file' && item.type.indexOf('image/') === 0) {
+            const file = item.getAsFile();
+            if (file) {
+              images.push(file);
+            }
+          }
+        }
+      }
+      if (!images.length && clipboardData.files && clipboardData.files.length) {
+        for (let j = 0; j < clipboardData.files.length; j++) {
+          const file = clipboardData.files[j];
+          if (file.type.indexOf('image/') === 0) {
+            images.push(file);
+          }
+        }
+      }
+      return images;
+    }
+
+    function revokeAttachmentPreview(item) {
+      if (item && item.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    }
+
     function renderAttachmentQueue() {
       if (!attachQueue) {
         return;
@@ -338,15 +397,25 @@
       attachQueue.innerHTML = '';
       pendingAttachments.forEach(function (item, index) {
         const chip = document.createElement('div');
-        chip.className = 'messages-attach-chip' + (item.uploading ? ' messages-attach-chip--uploading' : '');
+        chip.className = 'messages-attach-chip' +
+          (item.uploading ? ' messages-attach-chip--uploading' : '') +
+          (item.previewUrl || item.is_image ? ' messages-attach-chip--image' : '');
         const label = item.uploading ? 'Uploading…' : item.name;
+        let thumbHtml = '';
+        if (item.previewUrl) {
+          thumbHtml = '<img src="' + item.previewUrl + '" alt="" class="messages-attach-chip-thumb">';
+        } else if (item.url && item.is_image) {
+          thumbHtml = '<img src="' + item.url + '" alt="" class="messages-attach-chip-thumb">';
+        }
         chip.innerHTML =
+          thumbHtml +
           '<span class="messages-attach-chip-name" title="' + label + '">' + label + '</span>' +
           (item.uploading ? '' : '<span class="messages-attach-chip-size">' + formatSize(item.size) + '</span>') +
           '<button type="button" class="messages-attach-chip-remove" aria-label="Remove file">&times;</button>';
         const removeBtn = chip.querySelector('.messages-attach-chip-remove');
         if (removeBtn && !item.uploading) {
           removeBtn.addEventListener('click', function () {
+            revokeAttachmentPreview(pendingAttachments[index]);
             pendingAttachments.splice(index, 1);
             renderAttachmentQueue();
           });
@@ -365,11 +434,17 @@
       }
 
       const placeholders = [];
+      const normalizedFiles = [];
       for (let i = 0; i < fileList.length; i++) {
+        const normalized = normalizeUploadFile(fileList[i], i, fileList.length);
+        normalizedFiles.push(normalized);
+        const isImage = normalized.type.indexOf('image/') === 0;
         placeholders.push({
           uploading: true,
-          name: fileList[i].name,
-          size: fileList[i].size,
+          name: normalized.name,
+          size: normalized.size,
+          is_image: isImage,
+          previewUrl: isImage ? URL.createObjectURL(normalized) : null,
         });
       }
       pendingAttachments.push.apply(pendingAttachments, placeholders);
@@ -377,8 +452,8 @@
 
       const payload = new FormData();
       payload.append('conversation_id', conversationInput.value);
-      for (let j = 0; j < fileList.length; j++) {
-        payload.append('files', fileList[j]);
+      for (let j = 0; j < normalizedFiles.length; j++) {
+        payload.append('files', normalizedFiles[j]);
       }
 
       return fetch('/messages/upload/', {
@@ -392,12 +467,13 @@
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          for (let k = 0; k < placeholders.length; k++) {
-            const idx = pendingAttachments.indexOf(placeholders[k]);
+          placeholders.forEach(function (placeholder) {
+            const idx = pendingAttachments.indexOf(placeholder);
             if (idx !== -1) {
+              revokeAttachmentPreview(placeholder);
               pendingAttachments.splice(idx, 1);
             }
-          }
+          });
           if (!data.ok) {
             showToast(data.error || 'Could not upload files');
             renderAttachmentQueue();
@@ -409,6 +485,8 @@
               name: attachment.name,
               size: attachment.size,
               uploading: false,
+              is_image: attachment.is_image,
+              url: attachment.url,
             });
           });
           renderAttachmentQueue();
@@ -417,6 +495,7 @@
           placeholders.forEach(function (placeholder) {
             const idx = pendingAttachments.indexOf(placeholder);
             if (idx !== -1) {
+              revokeAttachmentPreview(placeholder);
               pendingAttachments.splice(idx, 1);
             }
           });
@@ -451,6 +530,15 @@
             form.requestSubmit();
           }
         }
+      });
+
+      input.addEventListener('paste', function (e) {
+        const images = collectClipboardImages(e.clipboardData);
+        if (!images.length) {
+          return;
+        }
+        e.preventDefault();
+        uploadFiles(images);
       });
     }
 
@@ -499,6 +587,7 @@
               input.value = '';
               input.style.height = 'auto';
             }
+            pendingAttachments.forEach(revokeAttachmentPreview);
             pendingAttachments.length = 0;
             renderAttachmentQueue();
             appendMessageHtml(data.html);

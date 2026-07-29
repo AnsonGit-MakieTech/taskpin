@@ -578,6 +578,21 @@ body[data-messages-page="inbox"] .main-content > .messages {
   color: var(--text-dark);
 }
 
+.messages-attach-chip--image {
+  max-width: 260px;
+  border-radius: 12px;
+  padding: 6px 10px 6px 6px;
+}
+
+.messages-attach-chip-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #E8E4DC;
+}
+
 .messages-attach-chip--uploading {
   opacity: .7;
 }
