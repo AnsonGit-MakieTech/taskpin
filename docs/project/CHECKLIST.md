@@ -422,3 +422,71 @@ A built-in messaging system so teammates can chat without leaving TaskPin — si
 ### Testing & docs
 - [x] Unit tests for XP calculation, level thresholds, and date-range filtering
 - [x] Mark Task 26 complete in this checklist when MVP ships
+
+---
+
+## Task 27 — Calendar (due-date view)
+
+### Data & query layer
+- [ ] Create `base/calendar.py` — month/week range helpers and task grouping by due date (no new model for MVP)
+- [ ] Query tasks scoped to current organization via `tasks_for_organization()`
+- [ ] Primary date field: `Task.due_date` (datetime, local timezone for day boundaries)
+- [ ] Optional toggle: show completed tasks on `completed_at` date (off by default)
+- [ ] Exclude or separately list tasks with no `due_date` (“Unscheduled” bucket)
+- [ ] Reuse existing priority + `deadline_urgency` (`overdue`, `due_today`, `due_soon`) for styling
+
+### Filters
+- [ ] Scope: **My tasks** / **Team** (all org tasks with a due date)
+- [ ] Assignee filter (team view)
+- [ ] Priority filter: all / urgent / important / normal
+- [ ] Status filter: active only (default) / include done
+- [ ] Preserve filter + month/year in query params across navigation
+
+### View & URL
+- [ ] Create `calendar` view in `base/views.py` with `@organization_required`
+- [ ] Register URL `calendar/` → `calendar` in `base/urls.py`
+- [ ] Support `?year=` and `?month=` for month navigation (default: current month)
+- [ ] Pass grouped tasks, summary counts, and filter state to template
+
+### Page template & UI (TaskPin theme)
+- [ ] Create `templates/calendar/calendar.html`
+- [ ] Create `static/css/calendar.css` — warm grid, sticky-note chips on day cells
+- [ ] Page header: **Calendar** + month/year title + prev/next month controls
+- [ ] **Month grid** (default view): 7-column week layout, today highlighted
+- [ ] Task chips on each day: title (truncated), priority color, assignee hint
+- [ ] Overdue / due-today styling (reuse board priority colors — friendly, not alarming)
+- [ ] Done tasks muted (strikethrough or reduced opacity) when “include done” is on
+- [ ] Summary strip: “Due today · Overdue · This week” counts
+- [ ] Click task chip → link to task edit or quick detail popover
+- [ ] Friendly empty state when no tasks fall in the visible range
+- [ ] Mobile-responsive: readable day cells; agenda-style fallback on small screens
+
+### Navigation & polish
+- [ ] Add **Calendar** link to sidebar in `templates/base.html` (icon + active state)
+- [ ] “Create note on this day” — link to task create with `due_date` pre-filled (query param)
+- [ ] Show assignee avatar or initials on chips when space allows
+
+### MVP launch criteria
+- [ ] Month view shows all org tasks with due dates in selected month
+- [ ] “My tasks” filter shows only current user’s assigned tasks
+- [ ] Today and overdue are visually distinct
+- [ ] Filters persist when changing months
+- [ ] Page loads efficiently for typical team size (~20 members, ~100 dated tasks/month)
+
+### V1.5 — Week view & agenda (optional follow-up)
+- [ ] Week view toggle (Mon–Sun or Sun–Sat, match locale)
+- [ ] Agenda list: “Next 7 days” below or beside the grid
+- [ ] Unscheduled tasks sidebar: notes without a due date
+- [ ] Click empty day cell → create task with that date pre-filled
+
+### V2 — Interactions & integrations (optional follow-up)
+- [ ] Drag task chip to another day → update `due_date` (respect `can_manage_task` / admin rules)
+- [ ] Realtime calendar refresh on task create/edit/done via existing WebSocket
+- [ ] Optional iCal feed export (read-only, org or personal)
+- [ ] Workload hint: busier days show subtle density indicator
+
+### Testing & docs
+- [ ] Unit tests for month range, task grouping, and filter logic
+- [ ] Mark Task 27 complete in this checklist when MVP ships
+
+
