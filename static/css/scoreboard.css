@@ -647,6 +647,121 @@
   }
 }
 
+.scoreboard-my-stats .scoreboard-badge {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Level rank badges (static/assets/rank-*.png) */
+.rank-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 10px;
+}
+
+.rank-badge-wrap--compact {
+  margin: 4px 0 6px;
+  justify-content: center;
+  gap: 0;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rank-badge-wrap--compact .rank-badge {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rank-badge-img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(120, 80, 20, 0.18));
+}
+
+.rank-badge-wrap--compact .rank-badge-img {
+  width: 40px;
+  height: 40px;
+}
+
+.rank-badge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rank-badge-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1.2;
+}
+
+.rank-badge-level {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rank-badge-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(255, 248, 238, 0.9);
+  border: 1px dashed #E8D0A8;
+  opacity: 0.88;
+}
+
+.rank-badge-next-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9A5200;
+}
+
+.rank-badge-img--next {
+  width: 32px;
+  height: 32px;
+  opacity: 0.75;
+  filter: grayscale(0.15);
+}
+
+.rank-badge-next-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rank-badge-next-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.rank-badge-next-at {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.scoreboard-row-head .rank-badge-wrap--compact {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.scoreboard-my-stats .rank-badge-wrap {
+  margin: 10px 0 12px;
+}
+
 @media (max-width: 520px) {
   .scoreboard-row {
     grid-template-columns: 28px 40px 1fr;

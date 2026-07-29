@@ -152,4 +152,26 @@ These should feel rare and rewarding.
 
 ---
 
+## 6. Level → Badge Mapping (Implementation)
+
+Rank badges use `static/assets/rank-1.png` … `rank-20.png`, aligned with the progression order above.
+
+| Member level | Badge # | Badge name | Image |
+| --- | --- | --- | --- |
+| 1 | 1 | New Note | `rank-1.png` |
+| 2 | 2 | First Pin | `rank-2.png` |
+| … | … | … | … |
+| 20 | 20 | TaskPin Elite | `rank-20.png` |
+| 21+ | 20 | TaskPin Elite (cap) | `rank-20.png` |
+
+**Rule:** `badge_rank = min(level, 20)` — one badge per level for the first 20 levels.
+
+**UI:** Show the member’s **current** rank badge image + name, and optionally the **next** badge (at level + 1) until they reach Level 20.
+
+**Code:** `base/scoreboard.py` — `rank_badge_for_level()`, `next_rank_badge_for_level()`, rendered via `templates/scoreboard/_rank_badge.html`.
+
+Achievement badges (First Blood, Fire Streak, etc.) stay separate — they reward specific behaviors, not level.
+
+---
+
  

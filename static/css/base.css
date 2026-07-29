@@ -245,16 +245,10 @@ body {
   margin-bottom: 10px;
 }
 
-.sidebar-avatar {
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: var(--orange);
-  color: var(--white);
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sidebar-avatar.avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 11px;
   flex-shrink: 0;
 }
 

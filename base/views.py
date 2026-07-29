@@ -48,11 +48,13 @@ from .calendar import (
 )
 from .scoreboard import (
     build_scoreboard_rows,
+    get_scoreboard_stats,
     get_team_monthly_goal,
     level_milestone_crossed,
     member_all_time_xp,
     milestone_activity_message,
     parse_scoreboard_filters,
+    rank_badge_for_level,
     xp_for_completed_task,
 )
 
@@ -198,6 +200,10 @@ def team_board(request):
     )
 
     board = []
+    member_stats = {
+        entry.user.pk: entry
+        for entry in get_scoreboard_stats(org, members=users)
+    }
     for user in users:
         tasks = list(
             _tasks_with_attachments(
@@ -207,7 +213,14 @@ def team_board(request):
             .annotate(priority_order=PRIORITY_ORDER)
             .order_by('priority_order', 'due_date')
         )
-        board.append({'user': user, 'tasks': tasks})
+        stats = member_stats.get(user.pk)
+        level = stats.level if stats else 1
+        board.append({
+            'user': user,
+            'tasks': tasks,
+            'level': level,
+            'rank_badge': rank_badge_for_level(level),
+        })
 
     all_users = list(users)
     return render(request, 'board/team_board.html', {

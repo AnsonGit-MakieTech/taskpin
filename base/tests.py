@@ -84,6 +84,39 @@ class ScoreboardEngineTests(TestCase):
         self.assertEqual(info.level, 2)
         self.assertEqual(info.progress_pct, 33.3)
 
+    def test_rank_badge_maps_level_to_image(self):
+        from base.scoreboard import (
+            MAX_RANK_BADGE,
+            next_rank_badge_for_level,
+            rank_badge_for_level,
+        )
+
+        badge = rank_badge_for_level(1)
+        self.assertEqual(badge.name, 'New Note')
+        self.assertEqual(badge.image, 'assets/rank-1.png')
+        self.assertEqual(badge.tier, 'beginner')
+
+        badge = rank_badge_for_level(8)
+        self.assertEqual(badge.name, 'Task Ranger')
+        self.assertEqual(badge.image, 'assets/rank-8.png')
+        self.assertEqual(badge.tier, 'active')
+
+        badge = rank_badge_for_level(20)
+        self.assertEqual(badge.name, 'TaskPin Elite')
+        self.assertEqual(badge.image, 'assets/rank-20.png')
+        self.assertEqual(badge.tier, 'elite')
+
+        badge = rank_badge_for_level(30)
+        self.assertEqual(badge.rank, MAX_RANK_BADGE)
+        self.assertEqual(badge.name, 'TaskPin Elite')
+
+        nxt = next_rank_badge_for_level(5)
+        self.assertIsNotNone(nxt)
+        self.assertEqual(nxt.name, 'Pin Helper')
+        self.assertEqual(nxt.min_level, 6)
+
+        self.assertIsNone(next_rank_badge_for_level(20))
+
     def test_get_scoreboard_stats_scoped_to_organization(self):
         other_admin = User.objects.create_user(username='other', password='pass')
         other_org = create_organization_with_admin('Other Co', other_admin)

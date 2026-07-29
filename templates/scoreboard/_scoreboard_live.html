@@ -38,7 +38,7 @@
         <p class="scoreboard-podium-name">
           {% if row.entry.user.profile %}{{ row.entry.user.profile.display_name }}{% else %}{{ row.entry.user.get_full_name|default:row.entry.user.username }}{% endif %}
         </p>
-        <p class="scoreboard-podium-level">Level {{ row.entry.level }}</p>
+        {% include 'scoreboard/_rank_badge.html' with rank_badge=row.rank_badge next_rank_badge=row.next_rank_badge entry=row.entry compact=True %}
         <p class="scoreboard-podium-xp">{{ row.entry.xp }} XP</p>
         {% include 'scoreboard/_badges.html' with badges=row.badges %}
       </article>
@@ -82,7 +82,7 @@
             {% if row.entry.user.pk == request.user.pk %}
             <span class="scoreboard-you-badge">You</span>
             {% endif %}
-            <span class="scoreboard-level-badge">Lvl {{ row.entry.level }}</span>
+            {% include 'scoreboard/_rank_badge.html' with rank_badge=row.rank_badge next_rank_badge=row.next_rank_badge entry=row.entry compact=True %}
             {% include 'scoreboard/_badges.html' with badges=row.badges %}
           </div>
           <div class="scoreboard-xp-bar" role="progressbar"
@@ -92,6 +92,7 @@
             <div class="scoreboard-xp-bar-fill" style="width: {{ row.entry.level_progress_pct }}%;"></div>
           </div>
           <p class="scoreboard-row-meta">
+            <span>Lvl {{ row.entry.level }}</span>
             <span>{{ row.entry.xp }} XP</span>
             <span>{{ row.entry.done_count }} done</span>
             <span>{{ row.entry.pending_count }} pending</span>

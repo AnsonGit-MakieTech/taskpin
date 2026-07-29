@@ -1,0 +1,22 @@
+{% load static %}
+<div class="rank-badge-wrap{% if compact %} rank-badge-wrap--compact{% endif %}">
+  <div class="rank-badge rank-badge--{{ rank_badge.tier }}" title="{{ rank_badge.name }} · Level {{ entry.level }}">
+    <img src="{% static rank_badge.image %}" alt="{{ rank_badge.name }}" class="rank-badge-img" width="48" height="48">
+    {% if not compact %}
+    <div class="rank-badge-copy">
+      <span class="rank-badge-name">{{ rank_badge.name }}</span>
+      <span class="rank-badge-level">Level {{ entry.level }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% if next_rank_badge and not compact %}
+  <div class="rank-badge-next" aria-label="Next rank at level {{ next_rank_badge.min_level }}">
+    <span class="rank-badge-next-label">Next</span>
+    <img src="{% static next_rank_badge.image %}" alt="" class="rank-badge-img rank-badge-img--next" width="32" height="32">
+    <div class="rank-badge-next-copy">
+      <span class="rank-badge-next-name">{{ next_rank_badge.name }}</span>
+      <span class="rank-badge-next-at">Lvl {{ next_rank_badge.min_level }}</span>
+    </div>
+  </div>
+  {% endif %}
+</div>

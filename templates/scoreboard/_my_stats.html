@@ -12,7 +12,8 @@
         </h2>
         <span class="scoreboard-my-stats-rank">Rank #{{ my_stats.rank }}</span>
       </div>
-      <p class="scoreboard-my-stats-level">Level {{ my_stats.entry.level }} · {{ my_stats.entry.xp }} XP</p>
+      <p class="scoreboard-my-stats-level">{{ my_stats.entry.xp }} XP</p>
+      {% include 'scoreboard/_rank_badge.html' with rank_badge=my_stats.rank_badge next_rank_badge=my_stats.next_rank_badge entry=my_stats.entry %}
       <div class="scoreboard-xp-bar scoreboard-xp-bar--my" role="progressbar"
            aria-valuenow="{{ my_stats.entry.level_progress_pct|floatformat:0 }}"
            aria-valuemin="0" aria-valuemax="100"

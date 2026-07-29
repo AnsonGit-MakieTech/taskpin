@@ -119,6 +119,78 @@ def level_from_xp(xp: int) -> LevelInfo:
     )
 
 
+MAX_RANK_BADGE = 20
+
+RANK_BADGE_NAMES = (
+    'New Note',
+    'First Pin',
+    'Sticky Starter',
+    'Note Keeper',
+    'Task Buddy',
+    'Pin Helper',
+    'Board Scout',
+    'Task Ranger',
+    'Checklist Pro',
+    'Quick Finisher',
+    'Board Captain',
+    'Task Guardian',
+    'Workflow Hero',
+    'Done Dealer',
+    'Pin Commander',
+    'Task Champion',
+    'Board Master',
+    'Quest Master',
+    'Workflow Legend',
+    'TaskPin Elite',
+)
+
+RANK_BADGE_TIER_BEGINNER = 'beginner'
+RANK_BADGE_TIER_ACTIVE = 'active'
+RANK_BADGE_TIER_LEADER = 'leader'
+RANK_BADGE_TIER_ELITE = 'elite'
+
+
+@dataclass(frozen=True)
+class RankBadge:
+    """Level-based rank badge — one badge per level from 1–20, images in static/assets/."""
+    rank: int
+    name: str
+    tier: str
+    image: str
+
+    @property
+    def min_level(self) -> int:
+        return self.rank
+
+
+def rank_badge_tier(rank: int) -> str:
+    if rank <= 4:
+        return RANK_BADGE_TIER_BEGINNER
+    if rank <= 10:
+        return RANK_BADGE_TIER_ACTIVE
+    if rank <= 15:
+        return RANK_BADGE_TIER_LEADER
+    return RANK_BADGE_TIER_ELITE
+
+
+def rank_badge_for_level(level: int) -> RankBadge:
+    """Map member level to rank badge (levels above 20 keep TaskPin Elite)."""
+    rank = min(max(level, 1), MAX_RANK_BADGE)
+    return RankBadge(
+        rank=rank,
+        name=RANK_BADGE_NAMES[rank - 1],
+        tier=rank_badge_tier(rank),
+        image=f'assets/rank-{rank}.png',
+    )
+
+
+def next_rank_badge_for_level(level: int) -> Optional[RankBadge]:
+    """Next badge preview — None when already at max rank badge."""
+    if level >= MAX_RANK_BADGE:
+        return None
+    return rank_badge_for_level(level + 1)
+
+
 def priority_filter_q(priority_filter: str) -> Q:
     if priority_filter == PRIORITY_FILTER_URGENT:
         return Q(priority=Task.PRIORITY_URGENT)
@@ -513,6 +585,8 @@ def build_scoreboard_rows(
             'entry': entry,
             'chart_value': chart_value_for_entry(entry, filters.sort),
             'badges': badges_for_member(entry, badge_context),
+            'rank_badge': rank_badge_for_level(entry.level),
+            'next_rank_badge': next_rank_badge_for_level(entry.level),
         })
 
     return rows, chart_max or 1
@@ -575,4 +649,7 @@ def milestone_activity_message(user: User, level: int) -> str:
         name = profile.display_name()
     else:
         name = user.get_full_name() or user.username
+    badge = rank_badge_for_level(level)
+    if level <= MAX_RANK_BADGE:
+        return f'🎉 {name} reached Level {level} — {badge.name}!'
     return f'🎉 {name} reached Level {level}!'

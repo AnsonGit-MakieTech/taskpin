@@ -104,11 +104,13 @@
           <div class="user-avatar-wrap">
             {% user_avatar entry.user css_class="user-avatar" %}
             <span class="presence-dot" data-presence-user-id="{{ entry.user.pk }}" hidden aria-label="Online"></span>
+            {% include 'board/_member_rank_badge.html' with rank_badge=entry.rank_badge level=entry.level %}
           </div>
           <div class="member-tile-meta">
             <div class="member-tile-name">
               {% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.get_full_name|default:entry.user.username }}{% endif %}
             </div>
+            <div class="member-tile-rank">{{ entry.rank_badge.name }} · Lvl {{ entry.level }}</div>
             <div class="member-tile-count">
               {{ entry.tasks|length }} open note{{ entry.tasks|length|pluralize }}
             </div>
