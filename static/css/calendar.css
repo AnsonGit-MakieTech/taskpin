@@ -242,11 +242,12 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(180, 130, 60, 0.08);
+  min-width: 0;
 }
 
 .calendar-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background: linear-gradient(180deg, #FFF3E0 0%, #FFE8C2 100%);
   border-bottom: 1px solid #F0D8B0;
 }
@@ -263,7 +264,7 @@
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .calendar-grid-wrap--week .calendar-day {
@@ -288,6 +289,7 @@
 
 .calendar-day {
   min-height: 110px;
+  min-width: 0;
   padding: 8px;
   border-right: 1px solid #F5EBDD;
   border-bottom: 1px solid #F5EBDD;
@@ -295,6 +297,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
 .calendar-day:nth-child(7n) { border-right: none; }
@@ -317,6 +320,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 4px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .calendar-day-num {
@@ -358,6 +363,7 @@
   gap: 4px;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -376,6 +382,8 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: transform 0.12s, box-shadow 0.12s;
   overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .calendar-chip:hover {
@@ -434,6 +442,8 @@
 }
 
 .calendar-chip-title {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -472,6 +482,11 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.calendar-agenda-tasks .calendar-chip {
+  max-width: 100%;
 }
 
 .calendar-agenda-empty {
@@ -486,6 +501,8 @@
   border-radius: 14px;
   background: #FFFCF7;
   border: 1px solid #F0E0C8;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .calendar-next-7-heading {
@@ -507,6 +524,8 @@
   background: #FFF8EE;
   border: 1px solid #F0E0C8;
   min-height: 80px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .calendar-next-7-day--empty {
@@ -520,6 +539,7 @@
   align-items: center;
   gap: 4px;
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .calendar-next-7-weekday {
@@ -541,6 +561,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .calendar-next-7-empty-link {
@@ -561,6 +583,8 @@
   border-radius: 14px;
   background: #FAF6F0;
   border: 1px dashed #E0D4C4;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .calendar-sidebar-heading {
@@ -580,10 +604,12 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .calendar-sidebar-list .calendar-chip {
   width: 100%;
+  box-sizing: border-box;
 }
 
 .calendar-sidebar-empty {
