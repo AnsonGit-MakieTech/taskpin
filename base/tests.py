@@ -768,3 +768,28 @@ class CalendarViewTests(TestCase):
         response = client.get('/calendar/?view=week&date=2026-03-10')
         self.assertContains(response, 'calendar-day--empty-click')
         self.assertContains(response, 'data-create-url="/task/create/?due=2026-03-')
+
+
+class MessageBodyFilterTests(TestCase):
+    def test_linkifies_urls(self):
+        from base.templatetags.message_tags import message_body
+
+        html = message_body('Check https://example.com/docs now')
+        self.assertIn('href="https://example.com/docs"', html)
+        self.assertIn('target="_blank"', html)
+        self.assertIn('rel="noopener noreferrer"', html)
+        self.assertIn('class="msg-link"', html)
+
+    def test_escapes_html_before_linkifying(self):
+        from base.templatetags.message_tags import message_body
+
+        html = message_body('<script>alert(1)</script> https://example.com')
+        self.assertNotIn('<script>', html)
+        self.assertIn('&lt;script&gt;', html)
+        self.assertIn('href="https://example.com"', html)
+
+    def test_preserves_line_breaks(self):
+        from base.templatetags.message_tags import message_body
+
+        html = message_body('Line one\nLine two')
+        self.assertIn('Line one<br>Line two', html)

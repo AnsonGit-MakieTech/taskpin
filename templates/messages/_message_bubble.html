@@ -8,7 +8,7 @@
   </div>
   {% endif %}
   {% if message.body %}
-  <div class="msg-bubble-body">{{ message.body|linebreaksbr }}</div>
+  <div class="msg-bubble-body">{{ message.body|message_body }}</div>
   {% endif %}
   {% if message.attachments.all %}
   <div class="msg-bubble-attachments">

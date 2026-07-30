@@ -434,6 +434,20 @@ body[data-messages-page="inbox"] .main-content > .messages {
   line-height: 1.45;
 }
 
+.msg-bubble-body .msg-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.msg-bubble--mine .msg-bubble-body .msg-link {
+  color: #fff;
+}
+
+.msg-bubble--theirs .msg-bubble-body .msg-link {
+  color: #1565c0;
+}
+
 .msg-bubble-body br {
   display: block;
   content: '';
