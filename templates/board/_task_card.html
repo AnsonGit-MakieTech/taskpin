@@ -1,9 +1,17 @@
 {% load taskpin_tags %}
 {% user_can_manage_task request.user task as show_manage %}
 {% user_can_delete_task request.user task as show_delete %}
-<div class="task-card task-card--{{ task.priority }}"
+<div class="task-card task-card--{{ task.priority }}{% if card_variant == 'sticky' %} task-card--sticky{% endif %}"
      {% if can_move_tasks %}draggable="true"{% endif %}
      data-task-id="{{ task.id }}">
+
+  {% if card_variant == 'sticky' %}
+    {% if task.priority == 'normal' %}
+    <span class="task-card-tape" aria-hidden="true"></span>
+    {% else %}
+    <span class="task-card-pin" aria-hidden="true"></span>
+    {% endif %}
+  {% endif %}
 
   {# ── Card header: actions menu ── #}
   {% if show_manage or show_delete or can_move_tasks %}
@@ -89,17 +97,39 @@
   </div>
 
   {# ── Card footer ── #}
-  <div class="task-card-footer">
+  <div class="task-card-footer{% if card_variant == 'sticky' %} task-card-footer--sticky{% endif %}">
     <div class="task-meta">
-      <span class="priority-badge">{{ task.get_priority_display }}</span>
+      <span class="priority-badge">{{ task.get_priority_display|upper }}</span>
       {% if task.due_date %}
       <span class="due-date{% if task.deadline_urgency %} due-date--{{ task.deadline_urgency }}{% endif %}">
+        {% if card_variant == 'sticky' %}
+        <svg class="due-date-icon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        {% endif %}
         {{ task.due_date|date:"M j, g:i A" }}
         {% if task.deadline_urgency == 'overdue' %} · overdue{% elif task.deadline_urgency == 'due_today' %} · today{% elif task.deadline_urgency == 'due_soon' %} · soon{% endif %}
       </span>
       {% endif %}
     </div>
-    {% if show_manage %}
+    {% if card_variant == 'sticky' %}
+    <div class="task-card-byline">
+      <span class="task-card-author">
+        By {% if task.created_by %}{% if task.created_by.profile %}{{ task.created_by.profile.display_name }}{% else %}{{ task.created_by.get_full_name|default:task.created_by.username }}{% endif %}{% else %}Unknown{% endif %}
+        · {{ task.created_at|date:"M j, g:i A" }}
+      </span>
+      {% if show_manage %}
+      <form method="post" action="{% url 'mark_done' task.id %}" class="done-form">
+        {% csrf_token %}
+        <button type="button" class="btn-done btn-done-confirm" data-task-title="{{ task.title }}">Done</button>
+      </form>
+      {% endif %}
+    </div>
+    {% elif show_manage %}
     <form method="post" action="{% url 'mark_done' task.id %}" class="done-form">
       {% csrf_token %}
       <button type="button" class="btn-done btn-done-confirm" data-task-title="{{ task.title }}">Done</button>

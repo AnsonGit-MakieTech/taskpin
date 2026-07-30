@@ -1,0 +1,11 @@
+{% for group in groups %}
+<div class="task-priority-group" data-priority="{{ group.key }}"{% if not group.tasks %} hidden{% endif %}>
+  <div class="task-priority-label">
+    <span class="priority-star priority-star--{{ group.key }}" aria-hidden="true">★</span>
+    {{ group.label }}
+  </div>
+  {% for task in group.tasks %}
+    {% include 'board/_task_card.html' with task=task card_variant='sticky' %}
+  {% endfor %}
+</div>
+{% endfor %}

@@ -1,0 +1,277 @@
+/* Shared sticky-note task cards (My Board + Team Board panel) */
+
+.task-priority-group {
+  margin-bottom: 28px;
+}
+
+.task-priority-group:last-child {
+  margin-bottom: 0;
+}
+
+.task-priority-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9A958C;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-star {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.priority-star--urgent     { color: #E53935; }
+.priority-star--important  { color: #FB8C00; }
+.priority-star--normal     { color: #F5B800; }
+
+.task-card--sticky {
+  margin-bottom: 0;
+  padding: 18px 16px 14px;
+  border-radius: 4px 4px 14px 4px;
+  border: none;
+  box-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.04),
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  color: var(--text-dark);
+  overflow: visible;
+}
+
+.task-card--sticky::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.06) 50%);
+  border-radius: 0 0 14px 0;
+  pointer-events: none;
+}
+
+.task-card--sticky.task-card--normal {
+  background: #FFF9C4;
+}
+
+.task-card--sticky.task-card--important {
+  background: #FFE0B2;
+}
+
+.task-card--sticky.task-card--urgent {
+  background: #FFCDD2;
+  color: var(--text-dark);
+}
+
+.task-card-pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50% 50% 50% 10%;
+  background: radial-gradient(circle at 35% 30%, #FFB74D 0%, #F57C00 55%, #E65100 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+.task-card-pin::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 6px;
+  background: #9E9E9E;
+  border-radius: 0 0 2px 2px;
+}
+
+.task-card-tape {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 52px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+}
+
+.task-card--sticky .task-card-actions {
+  top: 10px;
+  right: 8px;
+}
+
+.task-card--sticky .card-menu-trigger {
+  color: rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+}
+
+.task-card--sticky .task-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding-right: 24px;
+}
+
+.task-card--sticky .task-description {
+  font-size: 13px;
+  opacity: 0.82;
+  line-height: 1.55;
+}
+
+.task-card--sticky .task-description-toggle {
+  color: #1565c0;
+  opacity: 1;
+  font-size: 12px;
+}
+
+.task-card--sticky .task-attachment--image img {
+  max-height: 88px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.task-card-footer--sticky {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.task-card--sticky .task-meta {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-card--sticky .priority-badge {
+  background: rgba(255, 255, 255, 0.55);
+  color: inherit;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.task-card--sticky.task-card--important .priority-badge {
+  background: rgba(255, 255, 255, 0.65);
+  color: #E65100;
+}
+
+.task-card--sticky.task-card--normal .priority-badge {
+  color: #A07800;
+}
+
+.task-card--sticky.task-card--urgent .priority-badge {
+  color: #C62828;
+}
+
+.task-card--sticky .due-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 1;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.task-card--sticky .due-date-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.task-card--sticky .due-date--due_soon {
+  background: rgba(255, 255, 255, 0.7);
+  color: #E65100;
+}
+
+.task-card--sticky .due-date--due_today {
+  background: rgba(255, 255, 255, 0.7);
+  color: #F57F17;
+}
+
+.task-card--sticky .due-date--overdue {
+  background: rgba(255, 255, 255, 0.75);
+  color: #C62828;
+}
+
+.task-card-byline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.task-card-author {
+  font-size: 11px;
+  color: #8A857C;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-card--sticky .btn-done {
+  background: #fff;
+  border: 1px solid #D8D4CC;
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dark);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.task-card--sticky .btn-done:hover {
+  background: #FAFAFA;
+  border-color: #C4BFB6;
+}
+
+/* My Board — 2-column grid per priority group */
+.myboard-page .priority-group-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.myboard-page .priority-group-cards .task-card--sticky {
+  margin-bottom: 0;
+}
+
+/* Team Board panel — single column stack */
+.task-panel-body .task-store {
+  display: block;
+}
+
+.task-panel-body .task-priority-group {
+  margin-bottom: 22px;
+}
+
+.task-panel-body .task-card--sticky {
+  margin-bottom: 14px;
+}
+
+.task-panel-body .task-card--sticky:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .myboard-page .priority-group-cards {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

@@ -77,6 +77,21 @@ PRIORITY_ORDER = Case(
 )
 
 
+def _priority_task_groups(tasks):
+    by_priority = {
+        Task.PRIORITY_URGENT: [],
+        Task.PRIORITY_IMPORTANT: [],
+        Task.PRIORITY_NORMAL: [],
+    }
+    for task in tasks:
+        by_priority.get(task.priority, by_priority[Task.PRIORITY_NORMAL]).append(task)
+    return [
+        {'label': 'Urgent', 'key': 'urgent', 'tasks': by_priority[Task.PRIORITY_URGENT]},
+        {'label': 'Important', 'key': 'important', 'tasks': by_priority[Task.PRIORITY_IMPORTANT]},
+        {'label': 'Normal', 'key': 'normal', 'tasks': by_priority[Task.PRIORITY_NORMAL]},
+    ]
+
+
 def _active_users(organization):
     return list(get_org_members(organization))
 
@@ -194,6 +209,7 @@ def team_board(request):
         _tasks_with_attachments(
             tasks_for_organization(org)
             .filter(status=Task.STATUS_UNASSIGNED, assigned_to__isnull=True)
+            .select_related('created_by', 'created_by__profile')
         )
         .annotate(priority_order=PRIORITY_ORDER)
         .order_by('priority_order', 'due_date')
@@ -209,6 +225,7 @@ def team_board(request):
             _tasks_with_attachments(
                 tasks_for_organization(org)
                 .filter(assigned_to=user, status=Task.STATUS_ASSIGNED)
+                .select_related('created_by', 'created_by__profile')
             )
             .annotate(priority_order=PRIORITY_ORDER)
             .order_by('priority_order', 'due_date')
@@ -218,6 +235,7 @@ def team_board(request):
         board.append({
             'user': user,
             'tasks': tasks,
+            'groups': _priority_task_groups(tasks),
             'level': level,
             'rank_badge': rank_badge_for_level(level),
         })
@@ -226,6 +244,7 @@ def team_board(request):
     return render(request, 'board/team_board.html', {
         'board': board,
         'unassigned_tasks': unassigned_tasks,
+        'unassigned_groups': _priority_task_groups(unassigned_tasks),
         'all_users': all_users,
     })
 
@@ -284,6 +303,7 @@ def my_board(request):
     base_qs = _tasks_with_attachments(
         tasks_for_organization(request.organization)
         .filter(assigned_to=request.user, status=Task.STATUS_ASSIGNED)
+        .select_related('created_by', 'created_by__profile')
         .order_by('due_date', 'created_at')
     )
     urgent = list(base_qs.filter(priority=Task.PRIORITY_URGENT))
@@ -674,12 +694,17 @@ def task_card_fragment(request, task_id):
         return HttpResponse(status=404)
     task = (
         Task.objects
+        .select_related('created_by', 'created_by__profile')
         .prefetch_related(_task_attachment_prefetch())
         .get(pk=task.pk)
     )
+    card_variant = request.GET.get('variant', '').strip()
+    if card_variant == 'myboard':
+        card_variant = 'sticky'
     html = render(request, 'board/_task_card.html', {
         'task': task,
         'all_users': _active_users(request.organization),
+        'card_variant': card_variant if card_variant == 'sticky' else '',
     }).content.decode('utf-8')
     return HttpResponse(html)
 

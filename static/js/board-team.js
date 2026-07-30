@@ -19,6 +19,75 @@
   let activeTile = null;
   let suppressTileClickUntil = 0;
 
+  const PRIORITY_ORDER = ['urgent', 'important', 'normal'];
+  const PRIORITY_LABELS = {
+    urgent: 'Urgent',
+    important: 'Important',
+    normal: 'Normal',
+  };
+
+  function cardPriority(card) {
+    if (card.classList.contains('task-card--urgent')) {
+      return 'urgent';
+    }
+    if (card.classList.contains('task-card--important')) {
+      return 'important';
+    }
+    return 'normal';
+  }
+
+  function findPriorityGroup(store, priority) {
+    return store.querySelector('.task-priority-group[data-priority="' + priority + '"]');
+  }
+
+  function ensurePriorityGroup(store, priority) {
+    let group = findPriorityGroup(store, priority);
+    if (group) {
+      return group;
+    }
+
+    group = document.createElement('div');
+    group.className = 'task-priority-group';
+    group.dataset.priority = priority;
+    group.innerHTML =
+      '<div class="task-priority-label">' +
+      '<span class="priority-star priority-star--' + priority + '" aria-hidden="true">★</span>' +
+      (PRIORITY_LABELS[priority] || priority) +
+      '</div>';
+
+    const priorityIndex = PRIORITY_ORDER.indexOf(priority);
+    let inserted = false;
+    for (let i = priorityIndex + 1; i < PRIORITY_ORDER.length; i += 1) {
+      const nextGroup = findPriorityGroup(store, PRIORITY_ORDER[i]);
+      if (nextGroup) {
+        store.insertBefore(group, nextGroup);
+        inserted = true;
+        break;
+      }
+    }
+    if (!inserted) {
+      const empty = store.querySelector('.empty-state');
+      if (empty) {
+        store.insertBefore(group, empty);
+      } else {
+        store.appendChild(group);
+      }
+    }
+    return group;
+  }
+
+  function appendCardToStore(store, card, priority) {
+    const group = ensurePriorityGroup(store, priority || cardPriority(card));
+    group.hidden = false;
+    group.appendChild(card);
+  }
+
+  function refreshPriorityGroups(store) {
+    store.querySelectorAll('.task-priority-group').forEach(function (group) {
+      group.hidden = !group.querySelector('.task-card');
+    });
+  }
+
   function moveDropdownsToBody(root) {
     if (!root) {
       return;
@@ -73,6 +142,7 @@
   }
 
   function ensureEmptyState(store) {
+    refreshPriorityGroups(store);
     if (store.querySelector('.task-card')) {
       const empty = store.querySelector('.empty-state');
       if (empty) {
@@ -146,7 +216,8 @@
       return;
     }
 
-    targetStore.appendChild(card);
+    appendCardToStore(targetStore, card);
+    refreshPriorityGroups(sourceStore);
     ensureEmptyState(sourceStore);
     ensureEmptyState(targetStore);
     updateAllTileCounts();
@@ -174,6 +245,7 @@
     const store = card.closest('.task-store');
     card.remove();
     if (store) {
+      refreshPriorityGroups(store);
       ensureEmptyState(store);
     }
     updateAllTileCounts();
@@ -208,7 +280,7 @@
       return;
     }
 
-    targetStore.appendChild(card);
+    appendCardToStore(targetStore, card, data.priority || cardPriority(card));
 
     if (data.previous_assigned_to_id !== undefined) {
       const prevStore = findStoreByUserId(data.previous_assigned_to_id || '');

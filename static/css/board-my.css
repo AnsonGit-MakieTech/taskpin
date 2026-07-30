@@ -1,45 +1,49 @@
+/* My Board — sticky-note dashboard */
+
 .myboard-page {
-  padding: 32px 36px;
-  max-width: 720px;
+  padding: 32px 40px 48px;
+  max-width: 920px;
 }
 
 .myboard-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .myboard-heading {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-dark);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
 }
 
 .myboard-sub {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 4px;
   font-weight: 400;
 }
 
-.task-count-pill {
+.myboard-page .task-count-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: 20px;
-  padding: 5px 14px 5px 10px;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid #FFCC80;
+  border-radius: 999px;
+  padding: 6px 16px 6px 12px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-dark);
+  box-shadow: 0 1px 4px rgba(255, 152, 0, 0.08);
 }
 
-.task-count-pill-dot {
+.myboard-page .task-count-pill-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -47,39 +51,65 @@
   flex-shrink: 0;
 }
 
-.priority-group { margin-bottom: 28px; }
-
-.priority-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  color: var(--text-muted);
-  margin-bottom: 10px;
+/* Deadline alert banner */
+.myboard-page .deadline-banner {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
-.priority-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.priority-dot--urgent    { background: var(--red); }
-.priority-dot--important { background: var(--orange); }
-.priority-dot--normal    { background: var(--yellow); border: 1px solid #D4A820; }
-
-.priority-group-cards {
+.myboard-page .deadline-banner-icon {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-shrink: 0;
+  opacity: 0.9;
 }
 
-.myboard-tasks { margin-top: 4px; }
+.myboard-page .deadline-banner--due_soon {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFCC80;
+}
 
+.myboard-page .deadline-banner--due_today {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FFCC80;
+}
+
+.myboard-page .deadline-banner--overdue {
+  background: #FFEBEE;
+  color: #C62828;
+  border: 1px solid #EF9A9A;
+}
+
+/* Priority sections */
+.myboard-tasks {
+  margin-top: 8px;
+}
+
+.priority-group {
+  margin-bottom: 32px;
+}
+
+.priority-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9A958C;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -98,7 +128,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
-  opacity: .6;
+  opacity: 0.6;
 }
 
 .empty-state-title {
@@ -127,10 +157,12 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  transition: background .14s;
+  transition: background 0.14s;
 }
 
-.empty-state-action:hover { background: #F4A020; }
+.empty-state-action:hover {
+  background: #F4A020;
+}
 
 @media (max-width: 768px) {
   .myboard-page {
@@ -138,6 +170,17 @@
   }
 
   .myboard-header {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+  }
+
+  .myboard-heading {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 520px) {
+  .myboard-page .task-count-pill {
+    width: 100%;
+    justify-content: center;
   }
 }

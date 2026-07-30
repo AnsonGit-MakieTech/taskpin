@@ -107,7 +107,7 @@
     group.dataset.priority = priority;
     group.innerHTML =
       '<div class="priority-group-label">' +
-      '<span class="priority-dot priority-dot--' + priority + '"></span>' +
+      '<span class="priority-star priority-star--' + priority + '" aria-hidden="true">★</span>' +
       (PRIORITY_LABELS[priority] || priority) +
       '</div><div class="priority-group-cards"></div>';
     tasksRoot.appendChild(group);
@@ -252,7 +252,10 @@
       return Promise.resolve();
     }
 
-    return fetchFragment('/task/' + taskId + '/card/').then(function (html) {
+    const cardUrl = (PAGE === 'my_board' || PAGE === 'team_board')
+      ? '/task/' + taskId + '/card/?variant=sticky'
+      : '/task/' + taskId + '/card/';
+    return fetchFragment(cardUrl).then(function (html) {
       if (PAGE === 'team_board') {
         syncTeamBoard(taskId, html, data);
       } else if (PAGE === 'my_board') {

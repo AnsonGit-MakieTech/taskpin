@@ -4,6 +4,7 @@
 {% block title %}My Board — TaskPin{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/board-sticky.css' %}">
 <link rel="stylesheet" href="{% static 'css/board-my.css' %}">
 {% endblock %}
 
@@ -29,12 +30,12 @@
     {% for group in groups %}
     <div class="priority-group" data-priority="{{ group.key }}"{% if not group.tasks %} hidden{% endif %}>
       <div class="priority-group-label">
-        <span class="priority-dot priority-dot--{{ group.key }}"></span>
+        <span class="priority-star priority-star--{{ group.key }}" aria-hidden="true">★</span>
         {{ group.label }}
       </div>
       <div class="priority-group-cards">
         {% for task in group.tasks %}
-          {% include 'board/_task_card.html' with task=task %}
+          {% include 'board/_task_card.html' with task=task card_variant='sticky' %}
         {% endfor %}
       </div>
     </div>

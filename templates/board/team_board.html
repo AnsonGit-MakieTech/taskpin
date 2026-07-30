@@ -4,6 +4,7 @@
 {% block title %}Team Board — TaskPin{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/board-sticky.css' %}">
 <link rel="stylesheet" href="{% static 'css/board-team.css' %}">
 {% endblock %}
 
@@ -151,9 +152,7 @@
 
     <div class="task-store" id="task-store-unassigned" data-user-id="" data-member-name="Unassigned">
       {% if unassigned_tasks %}
-        {% for task in unassigned_tasks %}
-          {% include 'board/_task_card.html' with task=task %}
-        {% endfor %}
+        {% include 'board/_task_store_groups.html' with groups=unassigned_groups %}
       {% else %}
         <div class="empty-state empty-state--panel">
           <p class="empty-state-title">No unassigned tasks</p>
@@ -167,9 +166,7 @@
          data-user-id="{{ entry.user.pk }}"
          data-member-name="{% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.get_full_name|default:entry.user.username }}{% endif %}">
       {% if entry.tasks %}
-        {% for task in entry.tasks %}
-          {% include 'board/_task_card.html' with task=task %}
-        {% endfor %}
+        {% include 'board/_task_store_groups.html' with groups=entry.groups %}
       {% else %}
         <div class="empty-state empty-state--panel">
           <p class="empty-state-title">No tasks yet</p>
