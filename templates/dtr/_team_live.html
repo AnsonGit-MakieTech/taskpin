@@ -1,0 +1,36 @@
+<div id="dtr-team-live" class="dtr-team-live">
+  <div class="dtr-summary-strip" id="dtr-team-summary">
+    <span>{{ summary.clocked_in_count }} clocked in</span>
+    <span>{{ summary.pending_count }} pending</span>
+    <span>{{ summary.approved_count }} approved</span>
+    <span>{{ summary.total_entries }} total today</span>
+  </div>
+
+  {% if entries %}
+  <div class="dtr-table-wrap dtr-table-wrap--team" id="dtr-team-table-wrap">
+    <table class="dtr-table dtr-table--team">
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>In</th>
+          <th>Out</th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="dtr-team-tbody">
+        {% for entry in entries %}
+        {% include 'dtr/_team_row.html' with entry=entry %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="dtr-empty" id="dtr-team-empty">
+    <p class="dtr-empty-title">No entries for this day</p>
+    <p class="dtr-empty-text">Try another date or check back when teammates clock in.</p>
+  </div>
+  {% endif %}
+</div>

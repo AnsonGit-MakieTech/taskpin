@@ -378,3 +378,61 @@ class MessageAttachment(models.Model):
         if self.file and hasattr(self.file, 'content_type') and self.file.content_type:
             self.content_type = self.file.content_type
         super().save(*args, **kwargs)
+
+
+class TimeEntry(models.Model):
+    STATUS_OPEN = 'open'
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = [
+        (STATUS_OPEN, 'Open'),
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='time_entries',
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='time_entries',
+    )
+    clock_in = models.DateTimeField()
+    clock_out = models.DateTimeField(null=True, blank=True)
+    break_minutes = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    notes = models.TextField(blank=True, help_text='Optional note from the employee.')
+    admin_notes = models.TextField(blank=True, help_text='Admin note on approval or rejection.')
+    approved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_time_entries',
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-clock_in']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['organization', 'user'],
+                condition=models.Q(status='open'),
+                name='unique_open_time_entry_per_user_org',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user_id} {self.clock_in:%Y-%m-%d %H:%M} ({self.status})'
+
+    @property
+    def is_open(self):
+        return self.status == self.STATUS_OPEN
+
+    @property
+    def duration_hours(self):
+        from .dtr import entry_duration_hours
+        return entry_duration_hours(self)
+
+    @property
+    def duration_display(self):
+        from .dtr import format_hours
+        return format_hours(self.duration_hours)

@@ -1,0 +1,57 @@
+{% load static %}
+<div class="dtr-clock-card {% if open_entry %}dtr-clock-card--active{% endif %}"
+     {% if open_entry %}data-clock-in="{{ open_entry.clock_in|date:'c' }}"{% endif %}
+     id="dtr-clock-card">
+  <div class="dtr-clock-status">
+    <span class="dtr-status-dot" aria-hidden="true"></span>
+    {% if open_entry %}
+    <div>
+      <p class="dtr-status-label">Clocked in</p>
+      <p class="dtr-status-since">Since {{ open_entry.clock_in|time:"g:i A" }}</p>
+    </div>
+    {% else %}
+    <div>
+      <p class="dtr-status-label">Not clocked in</p>
+      <p class="dtr-status-since">Tap Clock In when your shift starts</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="dtr-clock-stats">
+    <div class="dtr-stat">
+      <span class="dtr-stat-value" id="dtr-elapsed">{% if open_entry %}—{% else %}0h{% endif %}</span>
+      <span class="dtr-stat-label">{% if open_entry %}Elapsed{% else %}Today{% endif %}</span>
+    </div>
+    <div class="dtr-stat">
+      <span class="dtr-stat-value" id="dtr-stat-today">{{ today_hours_display }}</span>
+      <span class="dtr-stat-label">Today</span>
+    </div>
+    <div class="dtr-stat">
+      <span class="dtr-stat-value" id="dtr-stat-week">{{ week_hours_display }}</span>
+      <span class="dtr-stat-label">This week</span>
+    </div>
+  </div>
+
+  <div class="dtr-clock-actions">
+    {% if open_entry %}
+    <form method="post" action="{% url 'dtr_clock_out' %}" class="dtr-clock-out-form" id="dtr-clock-out-form">
+      {% csrf_token %}
+      <label class="dtr-field">
+        <span class="dtr-field-label">Break (minutes)</span>
+        <input type="number" name="break_minutes" min="0" max="480" value="0" class="dtr-field-input">
+      </label>
+      <label class="dtr-field">
+        <span class="dtr-field-label">Notes <span class="dtr-optional">(optional)</span></span>
+        <textarea name="notes" rows="2" maxlength="500" class="dtr-field-textarea"
+                  placeholder="Anything to note about this shift…"></textarea>
+      </label>
+      <button type="button" class="dtr-btn dtr-btn--out dtr-clock-out-btn">Clock Out</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'dtr_clock_in' %}" class="dtr-clock-in-form" id="dtr-clock-in-form">
+      {% csrf_token %}
+      <button type="submit" class="dtr-btn dtr-btn--in">Clock In</button>
+    </form>
+    {% endif %}
+  </div>
+</div>

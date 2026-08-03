@@ -74,3 +74,12 @@ def calendar_query(context, year=None, month=None, date=None):
         return ''
     from base.filters import calendar_filter_query_string
     return calendar_filter_query_string(request, year=year, month=month, date=date)
+
+
+@register.simple_tag(takes_context=True)
+def dtr_filter_query(context, page=None):
+    request = context.get('request')
+    if not request:
+        return ''
+    from base.filters import dtr_filter_query_string
+    return dtr_filter_query_string(request, page=page)

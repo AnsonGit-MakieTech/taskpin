@@ -1,0 +1,51 @@
+{% load taskpin_tags %}
+<div id="dtr-timesheet-live" class="dtr-timesheet-live">
+  {% if entries %}
+  <div class="dtr-table-wrap">
+    <table class="dtr-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>In</th>
+          <th>Out</th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="dtr-timesheet-tbody">
+        {% for entry in entries %}
+        {% include 'dtr/_timesheet_row.html' with entry=entry %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="list-pagination" aria-label="Timesheet pages">
+    {% if page_obj.has_previous %}
+    <a href="?{% dtr_filter_query page_obj.previous_page_number %}" class="list-page-link">&larr; Newer</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">&larr; Newer</span>
+    {% endif %}
+
+    <span class="list-page-status">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?{% dtr_filter_query page_obj.next_page_number %}" class="list-page-link">Older &rarr;</a>
+    {% else %}
+    <span class="list-page-link list-page-link--disabled">Older &rarr;</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="dtr-empty">
+    <p class="dtr-empty-title">No timesheet entries yet</p>
+    <p class="dtr-empty-text">Clock in from the Time Record page to start logging your hours.</p>
+    <a href="{% url 'dtr_my' %}" class="dtr-btn dtr-btn--in">Go to Time Record</a>
+  </div>
+  {% endif %}
+</div>

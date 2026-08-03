@@ -1,0 +1,17 @@
+{% load taskpin_tags %}
+<tr class="dtr-row dtr-row--{{ entry.status }}" data-entry-id="{{ entry.pk }}">
+  <td class="dtr-cell dtr-cell--date">
+    <time datetime="{{ entry.clock_in|date:'c' }}">{{ entry.clock_in|date:"M j, Y" }}</time>
+  </td>
+  <td class="dtr-cell">{{ entry.clock_in|time:"g:i A" }}</td>
+  <td class="dtr-cell">
+    {% if entry.clock_out %}{{ entry.clock_out|time:"g:i A" }}{% else %}<span class="dtr-muted">—</span>{% endif %}
+  </td>
+  <td class="dtr-cell dtr-cell--hours">{{ entry.duration_display }}</td>
+  <td class="dtr-cell">
+    <span class="dtr-badge dtr-badge--{{ entry.status }}">{{ entry.get_status_display }}</span>
+  </td>
+  <td class="dtr-cell dtr-cell--notes">
+    {% if entry.notes %}{{ entry.notes|truncatechars:80 }}{% else %}<span class="dtr-muted">—</span>{% endif %}
+  </td>
+</tr>

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}My Timesheet — TaskPin{% endblock %}
+
+{% block body_attrs %}data-realtime-page="dtr_timesheet"{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dtr.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dtr-page">
+
+  <div class="dtr-header">
+    <div>
+      <h1 class="dtr-heading">My Timesheet</h1>
+      <p class="dtr-sub">Your clock-in and clock-out history</p>
+    </div>
+    <div class="dtr-header-links">
+      <a href="{% url 'dtr_my' %}" class="dtr-link-btn">← Time Record</a>
+      {% if is_admin %}
+      <a href="{% url 'dtr_team' %}" class="dtr-link-btn dtr-link-btn--admin">Team DTR</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include 'components/_dtr_filters.html' with filter_type='timesheet' filters=filters status_choices=status_choices %}
+
+  {% include 'dtr/_timesheet_live.html' %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dtr-sync.js' %}"></script>
+{% endblock %}

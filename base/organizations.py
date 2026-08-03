@@ -5,7 +5,7 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from functools import wraps
 
-from .models import Organization, OrganizationMembership, Task, UserProfile
+from .models import Organization, OrganizationMembership, Task, UserProfile, TimeEntry
 
 
 def get_membership(user):
@@ -99,3 +99,7 @@ def tasks_for_organization(organization):
 def activity_logs_for_organization(organization):
     from .models import ActivityLog
     return ActivityLog.objects.filter(organization=organization)
+
+
+def time_entries_for_organization(organization):
+    return TimeEntry.objects.filter(organization=organization)

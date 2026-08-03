@@ -489,4 +489,82 @@ A built-in messaging system so teammates can chat without leaving TaskPin — si
 - [x] Unit tests for month range, task grouping, and filter logic
 - [x] Mark Task 27 complete in this checklist when MVP ships
 
+---
+
+## Task 28 — Daily Time Record (DTR)
+
+A simple clock-in / clock-out attendance system for team members — inspired by FastDTR, but kept lightweight and friendly to match TaskPin. Separate from online presence (`presence.py`): presence means “on the app”; DTR means “officially at work.”
+
+### Data model
+- [x] Add `TimeEntry` model — fields: `organization` (FK), `user` (FK), `clock_in`, `clock_out` (nullable), `break_minutes` (default 0), `status` (`open` / `pending` / `approved` / `rejected`), `notes` (employee), `admin_notes`, `approved_by` (FK nullable), `approved_at`, `created_at`
+- [x] Enforce one open entry per user per organization (unique constraint or view-level check)
+- [x] Register `TimeEntry` in `base/admin.py`
+- [x] Run `makemigrations` and `migrate`
+
+### Query layer
+- [x] Create `base/dtr.py` — org-scoped queries (mirror `scoreboard.py` / `calendar.py` pattern)
+- [x] `entries_for_organization()` — filter by date range, user, status
+- [x] `get_open_entry(user, org)` — current clocked-in session
+- [x] `weekly_hours(user, org, week_start)` — Mon–Sun totals using `Asia/Manila` day boundaries
+- [x] `daily_summary(org, date)` — who is in, who is out, pending counts
+
+### Clock actions (views & URLs)
+- [x] `dtr/` → **My DTR** page with clock widget and today’s status
+- [x] `POST dtr/clock-in/` → start shift (reject if already open)
+- [x] `POST dtr/clock-out/` → end shift; optional notes; set status to `pending` (or `approved` if auto-approve is enabled)
+- [x] `GET api/dtr/status/` → JSON: open entry, elapsed time, today hours, week total (for widget / header badge)
+- [x] All views use `@organization_required`
+
+### My Timesheet (personal history)
+- [x] `dtr/timesheet/` → list of the logged-in user’s entries, newest first
+- [x] Filters: date range, status — reuse `base/filters.py` pattern from Done/Activity
+- [x] Paginate entries (e.g. 25/page); preserve filters across pages
+- [x] Show date, clock-in, clock-out, hours, status badge, notes
+
+### Team DTR (admin review)
+- [x] `dtr/team/` → admin-only day/week view of all org members’ entries
+- [x] Day picker + member rows: avatar, name, in/out times, hours, status
+- [x] `POST dtr/<id>/approve/` and `POST dtr/<id>/reject/` (reject requires admin note)
+- [x] Log approve/reject to `ActivityLog`
+- [x] Restrict team view and approve/reject to admin role
+
+### Page templates & UI (TaskPin theme)
+- [x] Create `templates/dtr/my_dtr.html` — main clock widget (Clock In / Clock Out), elapsed timer, weekly hours summary
+- [x] Create `templates/dtr/timesheet.html` — personal history table with filters
+- [x] Create `templates/dtr/team_dtr.html` — admin review table with approve/reject actions
+- [x] Partials: `_clock_widget.html`, `_timesheet_row.html`, `_team_row.html`
+- [x] Create `static/css/dtr.css` — warm background, green when clocked in, friendly status badges
+- [x] Create `static/js/dtr.js` — live elapsed timer, clock actions via fetch, optional status poll
+
+### Navigation & polish
+- [x] Add **Time Record** link to sidebar in `templates/base.html` (clock icon + active state)
+- [x] Friendly empty states: “Not clocked in yet”, “No timesheet entries this period”
+- [x] Mobile-responsive: large tappable Clock In/Out buttons; stacked timesheet rows
+
+### Permissions
+- [x] Members: clock in/out for self only; view own timesheet
+- [x] Admins: view team DTR, approve/reject entries, optionally edit past entries with audit note
+- [x] Server-side checks on every clock and approval action (not UI-only)
+
+### MVP launch criteria
+- [x] Member can clock in, clock out, and see hours on My DTR
+- [x] Only one open entry per user at a time
+- [x] Admin can review and approve/reject pending entries on Team DTR
+- [x] Weekly hours widget shows correct totals for the current week
+- [x] All queries scoped to `request.organization`
+
+### V2 — Schedules, breaks & export (optional follow-up)
+- [ ] `WorkSchedule` model — per-user day/time windows for auto-approve on clock-out
+- [ ] Unscheduled entries stay `pending` until admin approval (FastDTR-style)
+- [ ] Break start/end buttons while clocked in (or manual break minutes on clock-out)
+- [ ] CSV export for payroll (date, name, in, out, hours, status)
+- [x] Realtime Team DTR page refresh on clock in/out and approve/reject via WebSocket
+- [x] Realtime member My DTR / My Timesheet refresh when admin approves or rejects their entry
+- [ ] Broadcast `dtr.updated` over WebSocket — Team Board “Clocked in” badge on member tiles
+- [ ] Optional: “You’re clocked in” banner on My Board (like deadline banner)
+
+### Testing & docs
+- [x] Unit tests: open-entry constraint, hour calculation, org scoping, approve/reject flow
+- [x] Mark Task 28 complete in this checklist when MVP ships
+
 

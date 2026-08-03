@@ -45,8 +45,11 @@
   const remarksWrap = document.getElementById('confirm-remarks-wrap');
   const remarksField = document.getElementById('confirm-remarks');
   let pendingForm = null;
+  let confirmSubmitting = false;
 
   function openConfirm(opts) {
+    confirmSubmitting = false;
+    modalOk.disabled = false;
     modalTitle.textContent = opts.title;
     modalMessage.textContent = opts.message;
     modalOk.textContent = opts.okLabel;
@@ -69,6 +72,8 @@
     modal.hidden = true;
     document.body.classList.remove('modal-open');
     pendingForm = null;
+    confirmSubmitting = false;
+    modalOk.disabled = false;
     modalOk.className = 'btn-confirm-ok';
     if (remarksWrap) {
       remarksWrap.hidden = true;
@@ -82,21 +87,32 @@
   modal.querySelector('.confirm-backdrop').addEventListener('click', closeConfirm);
 
   modalOk.addEventListener('click', function () {
-    if (pendingForm) {
-      if (remarksField && !remarksWrap.hidden) {
-        let remarksInput = pendingForm.querySelector('input[name="completion_remarks"]');
-        if (!remarksInput) {
-          remarksInput = document.createElement('input');
-          remarksInput.type = 'hidden';
-          remarksInput.name = 'completion_remarks';
-          pendingForm.appendChild(remarksInput);
-        }
-        remarksInput.value = remarksField.value.trim();
+    if (confirmSubmitting || !pendingForm) return;
+    confirmSubmitting = true;
+    modalOk.disabled = true;
+    modalOk.textContent = 'Please wait…';
+    if (remarksField && !remarksWrap.hidden) {
+      let remarksInput = pendingForm.querySelector('input[name="completion_remarks"]');
+      if (!remarksInput) {
+        remarksInput = document.createElement('input');
+        remarksInput.type = 'hidden';
+        remarksInput.name = 'completion_remarks';
+        pendingForm.appendChild(remarksInput);
       }
-      pendingForm.submit();
+      remarksInput.value = remarksField.value.trim();
     }
+    pendingForm.dataset.submitting = 'true';
+    pendingForm.querySelectorAll('button').forEach(function (el) {
+      el.disabled = true;
+    });
+    pendingForm.submit();
     closeConfirm();
   });
+
+  window.TaskPinConfirm = {
+    open: openConfirm,
+    close: closeConfirm,
+  };
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !modal.hidden) closeConfirm();

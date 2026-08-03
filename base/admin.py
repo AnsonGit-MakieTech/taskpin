@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     UserProfile, Task, ActivityLog, Conversation, ConversationParticipant, Message,
-    Organization, OrganizationMembership, MessageAttachment, TaskAttachment,
+    Organization, OrganizationMembership, MessageAttachment, TaskAttachment, TimeEntry,
 )
 
 
@@ -79,3 +79,12 @@ class MessageAttachmentAdmin(admin.ModelAdmin):
     list_display = ('original_name', 'conversation', 'message', 'uploaded_by', 'size_bytes', 'created_at')
     search_fields = ('original_name', 'uploaded_by__username')
     raw_id_fields = ('conversation', 'message', 'uploaded_by')
+
+
+@admin.register(TimeEntry)
+class TimeEntryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'organization', 'clock_in', 'clock_out', 'status', 'break_minutes', 'approved_by')
+    list_filter = ('status', 'organization')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'notes')
+    date_hierarchy = 'clock_in'
+    raw_id_fields = ('user', 'organization', 'approved_by')

@@ -3,6 +3,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 from . import message_views
 from . import presence_views
+from . import dtr_views
 
 urlpatterns = [
     path('', views.team_board, name='team_board'),
@@ -53,4 +54,15 @@ urlpatterns = [
     path('api/my/deadline-reminders/', views.deadline_reminders, name='deadline_reminders'),
     path('team/', views.team_list, name='team_list'),
     path('team/invite/', views.invite_member, name='invite_member'),
+    path('dtr/', dtr_views.dtr_my, name='dtr_my'),
+    path('dtr/clock-in/', dtr_views.dtr_clock_in, name='dtr_clock_in'),
+    path('dtr/clock-out/', dtr_views.dtr_clock_out, name='dtr_clock_out'),
+    path('dtr/timesheet/', dtr_views.dtr_timesheet, name='dtr_timesheet'),
+    path('dtr/timesheet/fragment/', dtr_views.dtr_timesheet_fragment, name='dtr_timesheet_fragment'),
+    path('dtr/my/fragment/', dtr_views.dtr_my_fragment, name='dtr_my_fragment'),
+    path('dtr/team/', dtr_views.dtr_team, name='dtr_team'),
+    path('dtr/team/fragment/', dtr_views.dtr_team_fragment, name='dtr_team_fragment'),
+    path('dtr/<int:entry_id>/approve/', dtr_views.dtr_approve, name='dtr_approve'),
+    path('dtr/<int:entry_id>/reject/', dtr_views.dtr_reject, name='dtr_reject'),
+    path('api/dtr/status/', dtr_views.dtr_status_api, name='dtr_status_api'),
 ]

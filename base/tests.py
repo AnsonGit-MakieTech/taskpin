@@ -793,3 +793,160 @@ class MessageBodyFilterTests(TestCase):
 
         html = message_body('Line one\nLine two')
         self.assertIn('Line one<br>Line two', html)
+
+
+class DtrEngineTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username='dtradmin', password='pass')
+        self.org = create_organization_with_admin('DTR Co', self.admin)
+        self.member = User.objects.create_user(
+            username='dtrmember',
+            password='pass',
+            first_name='Pat',
+            last_name='Lee',
+        )
+        add_user_to_organization(self.org, self.member)
+
+    def _create_entry(self, **kwargs):
+        from base.models import TimeEntry
+
+        defaults = {
+            'organization': self.org,
+            'user': self.member,
+            'clock_in': timezone.now() - timedelta(hours=2),
+            'clock_out': timezone.now(),
+            'status': TimeEntry.STATUS_PENDING,
+            'break_minutes': 0,
+        }
+        defaults.update(kwargs)
+        return TimeEntry.objects.create(**defaults)
+
+    def test_entry_duration_hours(self):
+        from base.dtr import entry_duration_hours
+        from base.models import TimeEntry
+
+        start = timezone.now() - timedelta(hours=2, minutes=30)
+        end = timezone.now()
+        entry = TimeEntry(
+            organization=self.org,
+            user=self.member,
+            clock_in=start,
+            clock_out=end,
+            break_minutes=30,
+            status=TimeEntry.STATUS_PENDING,
+        )
+        self.assertEqual(entry_duration_hours(entry), 2.0)
+
+    def test_get_open_entry(self):
+        from base.dtr import get_open_entry
+        from base.models import TimeEntry
+
+        open_entry = TimeEntry.objects.create(
+            organization=self.org,
+            user=self.member,
+            clock_in=timezone.now(),
+            status=TimeEntry.STATUS_OPEN,
+        )
+        self.assertEqual(get_open_entry(self.member, self.org), open_entry)
+
+    def test_only_one_open_entry_per_user(self):
+        from base.models import TimeEntry
+        from django.db import IntegrityError
+
+        TimeEntry.objects.create(
+            organization=self.org,
+            user=self.member,
+            clock_in=timezone.now(),
+            status=TimeEntry.STATUS_OPEN,
+        )
+        with self.assertRaises(IntegrityError):
+            TimeEntry.objects.create(
+                organization=self.org,
+                user=self.member,
+                clock_in=timezone.now(),
+                status=TimeEntry.STATUS_OPEN,
+            )
+
+    def test_weekly_hours_includes_open_entry(self):
+        from base.dtr import weekly_hours, week_start_for_date
+        from base.models import TimeEntry
+
+        TimeEntry.objects.create(
+            organization=self.org,
+            user=self.member,
+            clock_in=timezone.now() - timedelta(hours=1),
+            status=TimeEntry.STATUS_OPEN,
+        )
+        hours = weekly_hours(self.member, self.org, week_start_for_date(timezone.localdate()))
+        self.assertGreaterEqual(hours, 1.0)
+
+    def test_entries_scoped_to_organization(self):
+        from base.dtr import entries_for_organization
+
+        other_admin = User.objects.create_user(username='otherdtr', password='pass')
+        other_org = create_organization_with_admin('Other DTR', other_admin)
+        self._create_entry()
+        from base.models import TimeEntry
+
+        TimeEntry.objects.create(
+            organization=other_org,
+            user=other_admin,
+            clock_in=timezone.now(),
+            clock_out=timezone.now(),
+            status=TimeEntry.STATUS_APPROVED,
+        )
+        entries = list(entries_for_organization(self.org))
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].user_id, self.member.id)
+
+    def test_clock_in_and_out_views(self):
+        self.client.login(username='dtrmember', password='pass')
+        response = self.client.post('/dtr/clock-in/', follow=True)
+        self.assertEqual(response.status_code, 200)
+        from base.models import TimeEntry
+
+        self.assertTrue(
+            TimeEntry.objects.filter(
+                user=self.member,
+                organization=self.org,
+                status=TimeEntry.STATUS_OPEN,
+            ).exists()
+        )
+        response = self.client.post('/dtr/clock-out/', {'notes': 'Done for the day'}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        entry = TimeEntry.objects.get(user=self.member, organization=self.org)
+        self.assertEqual(entry.status, TimeEntry.STATUS_PENDING)
+        self.assertEqual(entry.notes, 'Done for the day')
+
+    def test_admin_approve_flow(self):
+        entry = self._create_entry()
+        self.client.login(username='dtradmin', password='pass')
+        response = self.client.post(f'/dtr/{entry.pk}/approve/', follow=True)
+        self.assertEqual(response.status_code, 200)
+        entry.refresh_from_db()
+        from base.models import TimeEntry
+
+        self.assertEqual(entry.status, TimeEntry.STATUS_APPROVED)
+        self.assertEqual(entry.approved_by_id, self.admin.id)
+
+    def test_member_cannot_access_team_dtr(self):
+        self.client.login(username='dtrmember', password='pass')
+        response = self.client.get('/dtr/team/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_team_dtr_fragment_for_admin(self):
+        self.client.login(username='dtradmin', password='pass')
+        response = self.client.get('/dtr/team/fragment/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('dtr-team-live', response.content.decode())
+
+    def test_member_fragments(self):
+        entry = self._create_entry()
+        self.client.login(username='dtrmember', password='pass')
+        my_response = self.client.get('/dtr/my/fragment/')
+        self.assertEqual(my_response.status_code, 200)
+        self.assertIn('dtr-my-recent-live', my_response.content.decode())
+        sheet_response = self.client.get('/dtr/timesheet/fragment/')
+        self.assertEqual(sheet_response.status_code, 200)
+        self.assertIn('dtr-timesheet-live', sheet_response.content.decode())
+        self.assertIn(entry.get_status_display(), sheet_response.content.decode())

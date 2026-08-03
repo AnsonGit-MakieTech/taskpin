@@ -38,3 +38,21 @@ def notify_board_update(action, task_id=None, actor_id=None, extra=None, organiz
         )
     except Exception:
         logger.exception('Failed to broadcast board update (%s)', action)
+
+
+def notify_dtr_update(action, entry, actor_id):
+    """Broadcast a DTR change to connected clients in the entry's organization."""
+    from django.utils import timezone as tz
+
+    notify_board_update(
+        action,
+        task_id=None,
+        actor_id=actor_id,
+        extra={
+            'entry_id': entry.pk,
+            'user_id': entry.user_id,
+            'status': entry.status,
+            'entry_date': tz.localtime(entry.clock_in).date().isoformat(),
+        },
+        organization_id=entry.organization_id,
+    )

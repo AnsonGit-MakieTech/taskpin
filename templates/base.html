@@ -107,6 +107,15 @@
         </svg>
         Scoreboard
       </a>
+      <a href="{% url 'dtr_my' %}"
+         class="nav-item {% if request.resolver_match.url_name == 'dtr_my' or request.resolver_match.url_name == 'dtr_timesheet' or request.resolver_match.url_name == 'dtr_team' %}active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Time Record
+      </a>
       <a href="{% url 'messages_inbox' %}"
          class="nav-item nav-item--with-badge {% if request.resolver_match.url_name == 'messages_inbox' or request.resolver_match.url_name == 'messages_conversation' %}active{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"

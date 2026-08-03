@@ -11,6 +11,8 @@ ACTIVITY_PAGE_SIZE = 20
 
 FILTER_KEYS = ('assignee', 'actor', 'from', 'to', 'q')
 SCOREBOARD_FILTER_KEYS = ('period', 'from', 'to', 'sort', 'priority')
+DTR_FILTER_KEYS = ('from', 'to', 'status')
+DTR_TEAM_FILTER_KEYS = ('date', 'member', 'status')
 CALENDAR_FILTER_KEYS = (
     'scope', 'assignee', 'priority', 'include_done', 'show_completed_on',
     'view', 'date', 'week_start', 'year', 'month',
@@ -125,3 +127,67 @@ def calendar_filter_query_string(request, *, year=None, month=None, date=None):
     elif request.GET.get('month', '').strip():
         params['month'] = request.GET.get('month', '').strip()
     return urlencode(params)
+
+
+def dtr_filter_params(request):
+    return {key: request.GET.get(key, '').strip() for key in DTR_FILTER_KEYS}
+
+
+def dtr_team_filter_params(request):
+    return {key: request.GET.get(key, '').strip() for key in DTR_TEAM_FILTER_KEYS}
+
+
+def dtr_filter_query_string(request, page=None):
+    params = {}
+    for key, value in dtr_filter_params(request).items():
+        if value:
+            params[key] = value
+    if page is not None:
+        params['page'] = page
+    return urlencode(params)
+
+
+def dtr_team_filter_query_string(request):
+    params = {}
+    for key, value in dtr_team_filter_params(request).items():
+        if value:
+            params[key] = value
+    return urlencode(params)
+
+
+def filter_dtr_entries(queryset, request):
+    params = dtr_filter_params(request)
+
+    from_date = parse_date(params.get('from'))
+    to_date = parse_date(params.get('to'))
+    if from_date:
+        start = timezone.make_aware(datetime.combine(from_date, datetime.min.time()))
+        queryset = queryset.filter(clock_in__gte=start)
+    if to_date:
+        end = timezone.make_aware(datetime.combine(to_date, datetime.max.time()))
+        queryset = queryset.filter(clock_in__lte=end)
+
+    status = params.get('status')
+    if status:
+        queryset = queryset.filter(status=status)
+
+    return queryset
+
+
+def filter_dtr_team_entries(queryset, request, default_date):
+    params = dtr_team_filter_params(request)
+
+    entry_date = parse_date(params.get('date')) or default_date
+    start = timezone.make_aware(datetime.combine(entry_date, datetime.min.time()))
+    end = timezone.make_aware(datetime.combine(entry_date, datetime.max.time()))
+    queryset = queryset.filter(clock_in__gte=start, clock_in__lte=end)
+
+    member = params.get('member')
+    if member and member.isdigit():
+        queryset = queryset.filter(user_id=int(member))
+
+    status = params.get('status')
+    if status:
+        queryset = queryset.filter(status=status)
+
+    return queryset, entry_date

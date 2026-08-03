@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static taskpin_tags %}
+
+{% block title %}Team DTR — TaskPin{% endblock %}
+
+{% block body_attrs %}data-realtime-page="dtr_team"{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dtr.css' %}">
+<link rel="stylesheet" href="{% static 'css/list-filters.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dtr-page">
+
+  <div class="dtr-header">
+    <div>
+      <h1 class="dtr-heading">Team DTR</h1>
+      <p class="dtr-sub">Review and approve team time entries</p>
+    </div>
+    <div class="dtr-header-links">
+      <a href="{% url 'dtr_my' %}" class="dtr-link-btn">← Time Record</a>
+    </div>
+  </div>
+
+  {% include 'components/_dtr_filters.html' with filter_type='team' filters=filters members=members status_choices=status_choices entry_date=entry_date %}
+
+  {% include 'dtr/_team_live.html' %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dtr-sync.js' %}"></script>
+{% endblock %}

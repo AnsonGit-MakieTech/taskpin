@@ -1,0 +1,39 @@
+{% load taskpin_tags %}
+<tr class="dtr-row dtr-row--{{ entry.status }}" data-entry-id="{{ entry.pk }}">
+  <td class="dtr-cell dtr-cell--member">
+    <div class="dtr-member-cell">
+      {% user_avatar entry.user css_class="dtr-row-avatar" %}
+      <span>{% if entry.user.profile %}{{ entry.user.profile.display_name }}{% else %}{{ entry.user.get_full_name|default:entry.user.username }}{% endif %}</span>
+    </div>
+  </td>
+  <td class="dtr-cell">{{ entry.clock_in|time:"g:i A" }}</td>
+  <td class="dtr-cell">
+    {% if entry.clock_out %}{{ entry.clock_out|time:"g:i A" }}{% else %}<span class="dtr-muted">In progress</span>{% endif %}
+  </td>
+  <td class="dtr-cell dtr-cell--hours">{{ entry.duration_display }}</td>
+  <td class="dtr-cell">
+    <span class="dtr-badge dtr-badge--{{ entry.status }}">{{ entry.get_status_display }}</span>
+  </td>
+  <td class="dtr-cell dtr-cell--notes">
+    {% if entry.notes %}{{ entry.notes|truncatechars:60 }}{% else %}<span class="dtr-muted">—</span>{% endif %}
+  </td>
+  <td class="dtr-cell dtr-cell--actions">
+    {% if entry.status == 'pending' or entry.status == 'rejected' %}
+    <form method="post" action="{% url 'dtr_approve' entry.pk %}" class="dtr-inline-form">
+      {% csrf_token %}
+      <button type="submit" class="dtr-action-btn dtr-action-btn--approve">Approve</button>
+    </form>
+    {% endif %}
+    {% if entry.status == 'pending' or entry.status == 'approved' %}
+    <form method="post" action="{% url 'dtr_reject' entry.pk %}" class="dtr-inline-form dtr-reject-form">
+      {% csrf_token %}
+      <input type="text" name="admin_notes" maxlength="500" required
+             placeholder="Reason for rejection" class="dtr-reject-input">
+      <button type="submit" class="dtr-action-btn dtr-action-btn--reject">Reject</button>
+    </form>
+    {% endif %}
+    {% if entry.status == 'open' %}
+    <span class="dtr-muted">Still clocked in</span>
+    {% endif %}
+  </td>
+</tr>
